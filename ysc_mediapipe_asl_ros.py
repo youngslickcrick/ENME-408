@@ -2,7 +2,8 @@
 # Chris Iheanacho @ UMBC
 # Description: Compares live hand gestures using Sawyer's head camera against saved gestures
 # and combines them into a word.
-# ysc_mediapipe_asl_ros.py
+# ysc_mediapipe_asl_ros2.py
+
 
 import rospy
 import cv2
@@ -14,8 +15,9 @@ import mediapipe as mp
 import intera_interface
 from collections import deque
 from cv_bridge import CvBridge, CvBridgeError
-import math
-from intera_interface import Lights
+#import gripper_opener
+#from gripper_opener import grip
+
 
 bridge = CvBridge()
 latest_frame = None
@@ -28,6 +30,16 @@ hands = mp_hands.Hands(static_image_mode=False,
                        min_tracking_confidence=0.5)
 mp_drawing = mp.solutions.drawing_utils
 
+
+def grip(close=False):
+    gripper = intera_interface.Gripper()
+    
+    if close:
+        gripper.close()       
+    else:
+        gripper.open()
+        
+        
 
 def camera_callback(img_data, camera_name):
     global latest_frame
@@ -90,7 +102,7 @@ def compare_gesture_live(threshold=0.05, hold_time=.5, history_frames=5):
  
     SAVED_GESTURES_PATH = "/home/ysc/ros_ws/src/intera_sdk/intera_examples/scripts/captured_gestures_ros"
     saved_landmarks = {}
-    gesture_labels = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "finish", "backspace"]  
+    gesture_labels = ["A", "B", "C", "D", "E", "F", "G", "H", "I","J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "1","2","3","4","5","6","7","8","9" ,"finish", "backspace"]  
 
     for label in gesture_labels:
         json_path = os.path.join(SAVED_GESTURES_PATH, f"{label}_asl_landmarks_ros.json")
@@ -123,10 +135,17 @@ def compare_gesture_live(threshold=0.05, hold_time=.5, history_frames=5):
     gesture_start_time = None
     detected_gesture = None
     confirmed_gesture = None
-    l = Lights()
     recent_detections = deque(maxlen=history_frames)  
     word_spelled = []
+    limb = intera_interface.Limb()
+    
+    C1 = {'right_j0': 0.1262578125, 'right_j1': 0.432787109375, 'right_j2': 0.2639326171875, 'right_j3': -0.4753544921875, 'right_j4': 2.9767138671875, 'right_j5': -1.6180185546875, 'right_j6': -0.989341796875}
+    
+    O = {'right_j0': 0.0, 'right_j1': 0.0, 'right_j2': 0.0, 'right_j3': -0.0, 'right_j4': 0.0, 'right_j5': 0.0, 'right_j6': -0.0}
 
+    C3 = {'right_j0': 0.519818359375, 'right_j1': 0.24602734375, 'right_j2': 0.2218564453125, 'right_j3': -0.1082734375, 'right_j4': 2.9670185546875, 'right_j5': -1.3883837890625, 'right_j6': -0.93182421875}
+
+    
     while not rospy.is_shutdown():
         if latest_frame is None:
             continue
@@ -186,10 +205,32 @@ def compare_gesture_live(threshold=0.05, hold_time=.5, history_frames=5):
                                 confirmed_gesture = label  
                                 print(f"Gesture confirmed: {label}")
                                 gesture_start_time = None  
-
+                                
+                                                        
                                 if label == "finish":
                                     print(f"Word Confirmed: {''.join(word_spelled)}")
-                                    word_spelled = []  
+                                    sword = ''.join(word_spelled)
+                                    
+                                    if sword == 'C3':
+                                        limb.move_to_joint_positions(C3)
+                                        
+                                    elif sword == 'C1':
+                                        limb.move_to_joint_positions(C1)
+                                        
+                                    elif sword == 'O':
+                                        limb.move_to_joint_positions(O)
+                                        
+                                    elif sword == 'OP':
+                                        grip(close=False)
+                                        
+                                    elif sword == 'CL':
+                                        grip(close=True)    
+                                        
+                                        
+                                    word_spelled = []
+
+
+                                    
                                 elif label == "backspace":
                                     if word_spelled:
                                         word_spelled.pop()  
@@ -197,6 +238,10 @@ def compare_gesture_live(threshold=0.05, hold_time=.5, history_frames=5):
                                 else:
                                     word_spelled.append(label)  
                                     print(f"Current word: {''.join(word_spelled)}")
+                                    
+                                    if word_spelled == 'B':
+                                        print(f"Word Confirmed: {''.join(word_spelled)}")
+
                         else:                         
                             detected_gesture = label
                             gesture_start_time = time.time()
@@ -236,4 +281,4 @@ def compare_gesture_live(threshold=0.05, hold_time=.5, history_frames=5):
 
 
 if __name__ == "__main__":
-    compare_gesture_live(hold_time=1.2) 
+    compare_gesture_live(threshold=0.045, hold_time=1.2, history_frames=2) 
