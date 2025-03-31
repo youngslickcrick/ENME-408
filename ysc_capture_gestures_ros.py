@@ -11,8 +11,10 @@ import mediapipe as mp
 import intera_interface
 from cv_bridge import CvBridge, CvBridgeError
 
+
 bridge = CvBridge()
 latest_frame = None
+
 
 mp_hands = mp.solutions.hands
 hands = mp_hands.Hands(static_image_mode=False, 
@@ -26,7 +28,7 @@ SAVE_DIR = '/home/ysc/ros_ws/src/intera_sdk/intera_examples/scripts/captured_ges
 os.makedirs(SAVE_DIR, exist_ok=True)
 
 def capture_gesture_image(frame, gesture_label, hand_landmarks):
-    """Capture the gesture image and save both image and landmarks as JSON."""
+
     image_filename = f"{gesture_label}_asl_ros.jpg"
     json_filename = f"{gesture_label}_asl_landmarks_ros.json"
 
@@ -45,7 +47,9 @@ def camera_callback(img_data, camera_name):
     """Processes images from Sawyer's head camera and applies hand tracking."""
     global latest_frame
     try:
+
         latest_frame = bridge.imgmsg_to_cv2(img_data, "bgr8")
+
 
         latest_frame = cv2.flip(latest_frame, 1)
 
@@ -55,6 +59,7 @@ def camera_callback(img_data, camera_name):
 def open_camera():
     """Opens the Sawyer head camera and captures hand gestures."""
     rospy.init_node("sawyer_camera_capture", anonymous=True)
+
 
     cameras = intera_interface.Cameras()
     camera_name = "head_camera"
@@ -69,6 +74,7 @@ def open_camera():
     cameras.set_gain(camera_name, -1)
     cameras.set_exposure(camera_name, -1)
 
+
     cameras.set_callback(camera_name, camera_callback, rectify_image=True, callback_args=(camera_name,))
 
     print("Press 'a' for 'A', 'b' for 'B', 'c' for 'C', 'd' for 'D', etc. '5' for 'Finish', '6' for 'Backspace'. Press 'ESC' to exit.")
@@ -81,13 +87,14 @@ def open_camera():
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         results = hands.process(rgb_frame)
 
+
         height, width = frame.shape[:2]
+
 
         box_size = int(height * 0.2)
 
         top_left = (width // 2 - box_size // 2, int(height * 0.25)) 
         bottom_right = (top_left[0] + box_size, top_left[1] + box_size)
-
 
         cv2.rectangle(frame, top_left, bottom_right, (0, 255, 0), 2)
 
@@ -100,14 +107,20 @@ def open_camera():
                 )
 
         cv2.imshow("Sawyer Head Camera - Hand Tracking", frame)
-
+        """
+        head_display = intera_interface.HeadDisplay()
+        temp_image_path = "/tmp/sawyer_head_camera_feed.jpg"
+        cv2.imwrite(temp_image_path, frame)  
+        head_display.display_image(temp_image_path, display_in_loop=False, display_rate=10.0)
+        """
+        
         key = cv2.waitKey(1) & 0xFF
         if key == ord('a'):
             capture_gesture_image(frame, 'A', hand_landmarks)  
         elif key == ord('b'):
-            capture_gesture_image(frame, 'B', hand_landmarks) 
+            capture_gesture_image(frame, 'B', hand_landmarks)  
         elif key == ord('c'):
-            capture_gesture_image(frame, 'C', hand_landmarks)  
+            capture_gesture_image(frame, 'C', hand_landmarks) 
         elif key == ord('d'):
             capture_gesture_image(frame, 'D', hand_landmarks)  
         elif key == ord('e'):
@@ -121,7 +134,9 @@ def open_camera():
         elif key == ord('i'):
             capture_gesture_image(frame, 'I', hand_landmarks)             
         elif key == ord('k'):
-            capture_gesture_image(frame, 'K', hand_landmarks)  
+            capture_gesture_image(frame, 'K', hand_landmarks)
+        elif key == ord('j'):
+            capture_gesture_image(frame, 'J', hand_landmarks)   
         elif key == ord('l'):
             capture_gesture_image(frame, 'L', hand_landmarks) 
         elif key == ord('m'):
@@ -149,16 +164,33 @@ def open_camera():
         elif key == ord('x'):
             capture_gesture_image(frame, 'X', hand_landmarks)                
         elif key == ord('y'):
-            capture_gesture_image(frame, 'Y', hand_landmarks) 
+            capture_gesture_image(frame, 'Y', hand_landmarks)
+        elif key == ord('1'):
+            capture_gesture_image(frame, '1', hand_landmarks)
+        elif key == ord('2'):
+            capture_gesture_image(frame, '2', hand_landmarks)  
+        elif key == ord('3'):
+            capture_gesture_image(frame, '3', hand_landmarks)
+        elif key == ord('4'):
+            capture_gesture_image(frame, '4', hand_landmarks)
         elif key == ord('5'):
-            capture_gesture_image(frame, 'finish', hand_landmarks)                
+            capture_gesture_image(frame, '5', hand_landmarks)  
         elif key == ord('6'):
+            capture_gesture_image(frame, '6', hand_landmarks)            
+        elif key == ord('7'):
+            capture_gesture_image(frame, '7', hand_landmarks)
+        elif key == ord('8'):
+            capture_gesture_image(frame, '8', hand_landmarks)
+        elif key == ord('9'):
+            capture_gesture_image(frame, '9', hand_landmarks)                          
+        elif key == ord('z'):
+            capture_gesture_image(frame, 'finish', hand_landmarks)                
+        elif key == ord('j'):
             capture_gesture_image(frame, 'backspace', hand_landmarks)
-        elif key == 46: 
+        elif key == 46:  
             break
 
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":
     open_camera()
-
