@@ -26,7 +26,6 @@ intera_interface: The python API for communicating with Intera-enabled robots
 cv_bridge: The bridge between ROS image messages and openCV image representation
 time: Is used for handling time based operations it’s used when measuring how long a gesture has been held.
 numpy: Is used to call mathematical equations in multiple functions
-math: Is used for trigonometric and angle calculations.
 deque: Is used for storing past frames, helps improve the accuracy of the gestures being by comparing the last few frames and making sure most of them detect the last gesture.
 """
 
