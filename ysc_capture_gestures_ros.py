@@ -105,7 +105,7 @@ def open_camera():
 
     print("Press 'a' for 'A', 'b' for 'B', 'c' for 'C', 'd' for 'D', etc. 'z' for 'Finish', 'j' for 'Backspace'. Press '.' to exit.")
 
-    #Keeps the function looping as long ROS is active
+    
     while not rospy.is_shutdown():
         if latest_frame is None:
             continue
@@ -117,14 +117,11 @@ def open_camera():
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         results = hands.process(rgb_frame)
 
-
+        #Creates a green box on the camera feed screen
         height, width = frame.shape[:2]
-
         box_size = int(height * 0.2)
-
         top_left = (width // 2 - box_size // 2, int(height * 0.25)) 
         bottom_right = (top_left[0] + box_size, top_left[1] + box_size)
-
         cv2.rectangle(frame, top_left, bottom_right, (0, 255, 0), 2)
 
         
@@ -139,6 +136,9 @@ def open_camera():
 
         #Opens the camera feed
         cv2.imshow("Sawyer Head Camera - Hand Tracking", frame)
+        
+        
+        #Displays camera feed to sawyer head screen
         """
         head_display = intera_interface.HeadDisplay()
         temp_image_path = "/tmp/sawyer_head_camera_feed.jpg"
@@ -221,6 +221,7 @@ def open_camera():
             capture_gesture_image(frame, 'finish', hand_landmarks)                
         elif key == ord('j'):
             capture_gesture_image(frame, 'backspace', hand_landmarks)
+        #Closes script if '.' is pressed
         elif key == 46:  
             break
     
