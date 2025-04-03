@@ -3,19 +3,34 @@
 # Description: Captures gestures using Sawyer's head camera and MediaPipe Hand Tracking.
 # ysc_capture_gestures_ros.py
 
+
+
+
+#Libaries
 import rospy
 import cv2
 import os
-import json
+import json 
 import mediapipe as mp
 import intera_interface
 from cv_bridge import CvBridge, CvBridgeError
 
+"""
+rospy: Python client library for ROS that enables programmers to communicate with ROS topics, services, and parameters. In other words it uses the ROS python API for communication with Sawyer.
+cv2(openCV): Imports the openCV library which provides functions for and classes for image Image processing and computer vision. It’s essential in opening up sawyer’s cameras.
+os (operating systems): This allows for file manipulation and management, this is needed when saving images and javascript object notation (json) files to a specific directory.
+json(Javascript object notation): Used to store and transfer data, in this code it’s used to save the coordinates of the hand landmarks in JSON format.
+mediapipe: This is used for the hand tracking.
+intera_interface: The python API for communicating with Intera-enabled robots
+cv_bridge: The bridge between ROS image messages and openCV image representation
+"""
 
+#Global Variables (variables that can be accessed in and out of a function)
 bridge = CvBridge()
 latest_frame = None
 
 
+#FROM MEDIAPIPE TEMPLATE: Mediapipe initialization
 mp_hands = mp.solutions.hands
 hands = mp_hands.Hands(static_image_mode=False, 
                        max_num_hands=1,
@@ -23,41 +38,52 @@ hands = mp_hands.Hands(static_image_mode=False,
                        min_tracking_confidence=0.5)
 mp_drawing = mp.solutions.drawing_utils
 
-
+#Defining the directory where the images and coordinates of the gestures will be saved
 SAVE_DIR = '/home/ysc/ros_ws/src/intera_sdk/intera_examples/scripts/captured_gestures_ros'
+
+#Checks if directory exist, if not it will create it
 os.makedirs(SAVE_DIR, exist_ok=True)
 
+
+#Saves the image and the coordinates of the landmarks
 def capture_gesture_image(frame, gesture_label, hand_landmarks):
 
     image_filename = f"{gesture_label}_asl_ros.jpg"
     json_filename = f"{gesture_label}_asl_landmarks_ros.json"
-
+    
+    #Adds the image filename to the path
     image_filepath = os.path.join(SAVE_DIR, image_filename)
     cv2.imwrite(image_filepath, frame)
-
+    
+    #Saves landmarks in a dictionary format
     landmarks = [{"x": lm.x, "y": lm.y, "z": lm.z} for lm in hand_landmarks.landmark]
     
+    #Adds the coordinates filename to the path
     json_filepath = os.path.join(SAVE_DIR, json_filename)
+    
+    #Opens the json_filepath then writes the coordinates of the landmakrs in json
     with open(json_filepath, 'w') as f:
         json.dump(landmarks, f)
 
     print(f"Captured gesture: {gesture_label} -> Saved as {image_filename} and {json_filename}")
 
+
+#Processes images from Sawyer's head camera
 def camera_callback(img_data, camera_name):
-    """Processes images from Sawyer's head camera and applies hand tracking."""
+    
     global latest_frame
     try:
-
+    
         latest_frame = bridge.imgmsg_to_cv2(img_data, "bgr8")
-
-
         latest_frame = cv2.flip(latest_frame, 1)
 
     except CvBridgeError as e:
         rospy.logerr(f"CV Bridge Error: {e}")
 
+#Opens the Sawyer head camera and captures hand gestures.
 def open_camera():
-    """Opens the Sawyer head camera and captures hand gestures."""
+
+    #Intializes rospy nodes for running
     rospy.init_node("sawyer_camera_capture", anonymous=True)
 
 
@@ -77,19 +103,22 @@ def open_camera():
 
     cameras.set_callback(camera_name, camera_callback, rectify_image=True, callback_args=(camera_name,))
 
-    print("Press 'a' for 'A', 'b' for 'B', 'c' for 'C', 'd' for 'D', etc. '5' for 'Finish', '6' for 'Backspace'. Press 'ESC' to exit.")
+    print("Press 'a' for 'A', 'b' for 'B', 'c' for 'C', 'd' for 'D', etc. 'z' for 'Finish', 'j' for 'Backspace'. Press '.' to exit.")
 
+    #Keeps the function looping as long ROS is active
     while not rospy.is_shutdown():
         if latest_frame is None:
             continue
-
+        
+        
         frame = latest_frame.copy()
+        
+        #FROM MEDIAPIPE TEMPLATE: Used to convert frame to RGB which mediapipe runs in
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         results = hands.process(rgb_frame)
 
 
         height, width = frame.shape[:2]
-
 
         box_size = int(height * 0.2)
 
@@ -98,6 +127,8 @@ def open_camera():
 
         cv2.rectangle(frame, top_left, bottom_right, (0, 255, 0), 2)
 
+        
+        #FROM MEDIAPIPE TEMPLATE: Draws the landmarks on the hand
         if results.multi_hand_landmarks:
             for hand_landmarks in results.multi_hand_landmarks:
                 mp_drawing.draw_landmarks(
@@ -106,6 +137,7 @@ def open_camera():
                     mp_drawing.DrawingSpec(color=(255, 0, 0), thickness=2)
                 )
 
+        #Opens the camera feed
         cv2.imshow("Sawyer Head Camera - Hand Tracking", frame)
         """
         head_display = intera_interface.HeadDisplay()
@@ -115,6 +147,8 @@ def open_camera():
         """
         
         key = cv2.waitKey(1) & 0xFF
+        
+        #If a key is pressed a letter is saved
         if key == ord('a'):
             capture_gesture_image(frame, 'A', hand_landmarks)  
         elif key == ord('b'):
@@ -189,8 +223,9 @@ def open_camera():
             capture_gesture_image(frame, 'backspace', hand_landmarks)
         elif key == 46:  
             break
-
+    
     cv2.destroyAllWindows()
 
+#Used as guard for against other scripts allowing it to run properly if called
 if __name__ == "__main__":
     open_camera()
