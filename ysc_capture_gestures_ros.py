@@ -68,7 +68,7 @@ def capture_gesture_image(frame, gesture_label, hand_landmarks):
     print(f"Captured gesture: {gesture_label} -> Saved as {image_filename} and {json_filename}")
 
 
-#Processes images from Sawyer's head camera
+#FROM RETHINKROBOTICS TEMPLATE: Processes images from Sawyer's head camera
 def camera_callback(img_data, camera_name):
     
     global latest_frame
@@ -169,8 +169,8 @@ def open_camera():
             capture_gesture_image(frame, 'I', hand_landmarks)             
         elif key == ord('k'):
             capture_gesture_image(frame, 'K', hand_landmarks)
-        elif key == ord('j'):
-            capture_gesture_image(frame, 'J', hand_landmarks)   
+        #elif key == ord('j'):
+         #   capture_gesture_image(frame, 'J', hand_landmarks)   
         elif key == ord('l'):
             capture_gesture_image(frame, 'L', hand_landmarks) 
         elif key == ord('m'):
