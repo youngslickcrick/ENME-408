@@ -34,6 +34,7 @@ deque: Is used for storing past frames, helps improve the accuracy of the gestur
 bridge = CvBridge()
 latest_frame = None
 
+
 #FROM MEDIAPIPE TEMPLATE: Mediapipe initialization
 mp_hands = mp.solutions.hands
 hands = mp_hands.Hands(static_image_mode=False, 
@@ -53,7 +54,7 @@ def grip(close=False):
         gripper.open()
         
         
-#Processes images from Sawyer's head camera
+#FROM RETHINKROBOTICS TEMPLATE:Processes images from Sawyer's head camera
 def camera_callback(img_data, camera_name):
     global latest_frame
     try:
@@ -112,13 +113,14 @@ def create_display_image(detected_gesture, word_spelled):
     
     return image
 
-
 #Compares the saved coordinates of landmarks to the new ones detected by the camera
-def compare_gesture_live(threshold=0.05, hold_time=.5, history_frames=5):
+def compare_gesture_live(threshold=0.05, hold_time=1.2, history_frames=5):
+ 
+
  
     SAVED_GESTURES_PATH = "/home/ysc/ros_ws/src/intera_sdk/intera_examples/scripts/captured_gestures_ros"
     saved_landmarks = {}
-    gesture_labels = ["A", "B", "C", "D", "E", "F", "G", "H", "I","J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "1","2","3","4","5","6","7","8","9" ,"finish", "backspace"]  
+    gesture_labels = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "1","2","3","4","5","6","7","8","9" ,"finish", "backspace"]  
 
     for label in gesture_labels:
         json_path = os.path.join(SAVED_GESTURES_PATH, f"{label}_asl_landmarks_ros.json")
@@ -145,8 +147,9 @@ def compare_gesture_live(threshold=0.05, hold_time=.5, history_frames=5):
 
   
     cameras.set_callback(camera_name, camera_callback, rectify_image=True, callback_args=(camera_name,))
-
-    
+ 
+    joint = None
+    joint_control_mode = False
     head_display = intera_interface.HeadDisplay()
     gesture_start_time = None
     detected_gesture = None
@@ -154,6 +157,8 @@ def compare_gesture_live(threshold=0.05, hold_time=.5, history_frames=5):
     recent_detections = deque(maxlen=history_frames)  
     word_spelled = []
     limb = intera_interface.Limb()
+    
+    
     
     #Joint angles for different positions
     C1 = {'right_j0': 0.1262578125, 'right_j1': 0.432787109375, 'right_j2': 0.2639326171875, 'right_j3': -0.4753544921875, 'right_j4': 2.9767138671875, 'right_j5': -1.6180185546875, 'right_j6': -0.989341796875}
@@ -230,23 +235,27 @@ def compare_gesture_live(threshold=0.05, hold_time=.5, history_frames=5):
                                 #Confirms spelled word                        
                                 if label == "finish":
                                     print(f"Word Confirmed: {''.join(word_spelled)}")
-                                    sword = ''.join(word_spelled)
                                     
-                                    if sword == 'C3':
-                                        limb.move_to_joint_positions(C3)
-                                        
-                                    elif sword == 'C1':
+                                    sword = ''.join(word_spelled)
+
+                                    """
+                                    if sword == 'B':
                                         limb.move_to_joint_positions(C1)
-                                        
-                                    elif sword == 'O':
+                                    elif sword == 'A':
+                                        limb.move_to_joint_positions(C3)
+                                        #Zero
+                                    elif sword == 'Q':
                                         limb.move_to_joint_positions(O)
                                         
-                                    elif sword == 'OP':
-                                        grip(close=False)
-                                        
-                                    elif sword == 'CL':
-                                        grip(close=True)    
-                                        
+                                        #Grip
+                                    elif sword == 'Grip':
+                                        grip(close=True)
+                                        #Ungrip
+                                    elif sword == 'Ungrip':
+                                        grip(close=False) 
+                                    """   
+
+                                   
                                     #After word is confirmed, new the list is emptied  
                                     word_spelled = []
 
@@ -261,9 +270,63 @@ def compare_gesture_live(threshold=0.05, hold_time=.5, history_frames=5):
                                 else:
                                     word_spelled.append(label)  
                                     print(f"Current word: {''.join(word_spelled)}")
+                                   
+                                    charac = confirmed_gesture
                                     
-                                    if word_spelled == 'B':
-                                        print(f"Word Confirmed: {''.join(word_spelled)}")
+                                    if charac == 'A':
+                                        limb.move_to_joint_positions(C3)
+                                        
+                                    elif charac == 'B':
+                                        limb.move_to_joint_positions(C1)
+                                    #Zero
+                                    elif charac == 'Q':
+                                        limb.move_to_joint_positions(O)
+                                      
+                                        
+                                    #Grip
+                                    if charac == 'G':
+                                        grip(close=True)
+                                    #Ungrip
+                                    elif charac == 'U':
+                                        grip(close=False)
+                                    
+ 
+                                    elif charac == 'L':
+                                        print("Joint control mode: Use 'I' to increase, 'D' to decrease, 'finish' to exit.")
+                                        
+                                        joint_control_mode = True
+                                        hold_time = 0.0
+                                        gesture_start_time = time.time()
+                                                   
+                                    elif joint_control_mode and joint is None and charac in ['O', '0', '1', '2', '3', '4', '5', '6']:
+                                        number = '0' if charac == 'O' else charac
+                                        joint = f'right_j{number}'
+                                        print(f"Controlling joint: {joint}")
+    
+                                    elif joint_control_mode and confirmed_gesture in ["I", "D", "finish"]:
+                                        if confirmed_gesture == "finish":
+                                            print("Exiting joint control mode.")
+                                            hold_time = 1.2
+                                            joint_control_mode = False
+                                            joint = None
+                                            confirmed_gesture = None
+                                            gesture_start_time = None
+                                            
+
+                                        else:
+                                            delta = 0.1 if confirmed_gesture == "I" else -0.1
+                                            current_position = limb.joint_angle(joint)
+                                            new_position = current_position + delta
+                                            limb.set_joint_positions({joint: new_position})
+                                            print(f"{confirmed_gesture} {joint} to {new_position}")
+                                            time.sleep(0.3)
+                                            
+                                            break
+
+
+
+
+                                                
                         #Resets the loop
                         else:                         
                             detected_gesture = label
@@ -306,4 +369,4 @@ def compare_gesture_live(threshold=0.05, hold_time=.5, history_frames=5):
 
 #Used as guard for against other scripts allowing it to run properly if called
 if __name__ == "__main__":
-    compare_gesture_live(threshold=0.045, hold_time=1.2, history_frames=2) 
+    compare_gesture_live(threshold=0.06, history_frames=5) 
