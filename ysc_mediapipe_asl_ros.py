@@ -33,7 +33,7 @@ deque: Is used for storing past frames, helps improve the accuracy of the gestur
 #Global Variables (variables that can be accessed in and out of a function)
 bridge = CvBridge()
 latest_frame = None
-
+currentlb = 0
 
 #FROM MEDIAPIPE TEMPLATE: Mediapipe initialization
 mp_hands = mp.solutions.hands
@@ -93,7 +93,7 @@ def weighted_distance(saved, detected):
 
 
 #Displays translated gestures on sawyer head screen
-def create_display_image(detected_gesture, word_spelled):
+def create_display_image1(detected_gesture, word_spelled):
 
     width, height = 1024, 600  
     image = np.zeros((height, width, 3), dtype=np.uint8) 
@@ -112,12 +112,50 @@ def create_display_image(detected_gesture, word_spelled):
     cv2.putText(image, text_word, (50, 400), font, font_scale, color, thickness)
     
     return image
+    
+    
+#Displays joint movement on sawyer head screen
+def create_display_image2(detected_gesture, word_spelled):
+    
+    global joint
+    width, height = 1024, 600  
+    image = np.zeros((height, width, 3), dtype=np.uint8) 
+
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    font_scale = 2
+    thickness = 4
+    color = (255, 255, 255)  
+
+    
+    text_detected = f"Detected: {detected_gesture}" if detected_gesture else "Detected: None"
+    cv2.putText(image, text_detected, (50, 200), font, font_scale, color, thickness)
+
+    
+    text_word = f"Controlling joint: {joint}"
+    cv2.putText(image, text_word, (50, 400), font, font_scale, color, thickness)
+    
+    return image
+    
+def head_pan(newlb):
+    global currentlb
+    
+    hp = intera_interface.Head()
+    lb = intera_interface.Limb()
+
+    currenthp = hp.pan()
+    
+    diff = currentlb - newlb
+    ratio = 0.96098
+    #pan_mode()
+    hp.set_pan(currenthp+diff*ratio, speed=0.5)
+
+    
+
 
 #Compares the saved coordinates of landmarks to the new ones detected by the camera
-def compare_gesture_live(threshold=0.05, hold_time=1.2, history_frames=5):
- 
+def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
 
- 
+    global joint
     SAVED_GESTURES_PATH = "/home/ysc/ros_ws/src/intera_sdk/intera_examples/scripts/captured_gestures_ros"
     saved_landmarks = {}
     gesture_labels = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "1","2","3","4","5","6","7","8","9" ,"finish", "backspace"]  
@@ -157,11 +195,11 @@ def compare_gesture_live(threshold=0.05, hold_time=1.2, history_frames=5):
     recent_detections = deque(maxlen=history_frames)  
     word_spelled = []
     limb = intera_interface.Limb()
-    
+    currentlb = limb.joint_angle('right_j0')
     
     
     #Joint angles for different positions
-    C1 = {'right_j0': 0.1262578125, 'right_j1': 0.432787109375, 'right_j2': 0.2639326171875, 'right_j3': -0.4753544921875, 'right_j4': 2.9767138671875, 'right_j5': -1.6180185546875, 'right_j6': -0.989341796875}
+    C1 = {'right_j0': 0.1262578125, 'right_j1': 0.422787109375, 'right_j2': 0.2639326171875, 'right_j3': -0.4753544921875, 'right_j4': 2.9767138671875, 'right_j5': -1.6180185546875, 'right_j6': -0.989341796875}
     
     O = {'right_j0': 0.0, 'right_j1': 0.0, 'right_j2': 0.0, 'right_j3': -0.0, 'right_j4': 0.0, 'right_j5': 0.0, 'right_j6': -0.0}
 
@@ -235,6 +273,11 @@ def compare_gesture_live(threshold=0.05, hold_time=1.2, history_frames=5):
                                 #Confirms spelled word                        
                                 if label == "finish":
                                     print(f"Word Confirmed: {''.join(word_spelled)}")
+                                    hold_time = 1.2
+                                    joint_control_mode = False
+                                    joint = None
+                                    confirmed_gesture = None
+                                    gesture_start_time = None
                                     
                                     sword = ''.join(word_spelled)
 
@@ -262,10 +305,12 @@ def compare_gesture_live(threshold=0.05, hold_time=1.2, history_frames=5):
 
                                 #Deletes last letter  
                                 elif label == "backspace":
+                                    joint = None
                                     if word_spelled:
                                         word_spelled.pop()  
                                         print(f"Word after backspace: {''.join(word_spelled)}")
                                 
+
                                 #Combines latest letter to last letter        
                                 else:
                                     word_spelled.append(label)  
@@ -275,38 +320,38 @@ def compare_gesture_live(threshold=0.05, hold_time=1.2, history_frames=5):
                                     
                                     if charac == 'A':
                                         limb.move_to_joint_positions(C3)
-                                        
+
                                     elif charac == 'B':
-                                        limb.move_to_joint_positions(C1)
-                                    #Zero
-                                    elif charac == 'Q':
                                         limb.move_to_joint_positions(O)
+                                    #Zero
+                                    elif charac == 'C':
+                                        limb.move_to_joint_positions(C1)
                                       
                                         
                                     #Grip
                                     if charac == 'G':
                                         grip(close=True)
                                     #Ungrip
-                                    elif charac == 'U':
+                                    elif charac == 'V':
                                         grip(close=False)
                                     
  
                                     elif charac == 'L':
-                                        print("Joint control mode: Use 'I' to increase, 'D' to decrease, 'finish' to exit.")
-                                        
+                                        print("Joint control mode: Select joint number")
+
                                         joint_control_mode = True
                                         hold_time = 0.0
                                         gesture_start_time = time.time()
                                                    
-                                    elif joint_control_mode and joint is None and charac in ['O', '0', '1', '2', '3', '4', '5', '6']:
+                                    elif joint_control_mode and joint is None and charac in ['O', '1', '2', '3', '4', '5', '6']:
                                         number = '0' if charac == 'O' else charac
                                         joint = f'right_j{number}'
                                         print(f"Controlling joint: {joint}")
-    
+                                        print(" Use 'I' to increase, 'D' to decrease, 'finish' to exit.")
                                     elif joint_control_mode and confirmed_gesture in ["I", "D", "finish"]:
-                                        if confirmed_gesture == "finish":
+                                        if label == "finish":
                                             print("Exiting joint control mode.")
-                                            hold_time = 1.2
+                                            hold_time = 1.0
                                             joint_control_mode = False
                                             joint = None
                                             confirmed_gesture = None
@@ -314,19 +359,19 @@ def compare_gesture_live(threshold=0.05, hold_time=1.2, history_frames=5):
                                             
 
                                         else:
-                                            delta = 0.1 if confirmed_gesture == "I" else -0.1
+                                            delta = 0.01 if confirmed_gesture == "I" else -0.01
                                             current_position = limb.joint_angle(joint)
                                             new_position = current_position + delta
-                                            limb.set_joint_positions({joint: new_position})
+                                            limb.move_to_joint_positions({joint: new_position}, test=True)
+                                            #newlb = limb.joint_angle('right_j0')
+                                            #head_pan(newlb)
                                             print(f"{confirmed_gesture} {joint} to {new_position}")
-                                            time.sleep(0.3)
+                                            time.sleep(0.003)
+                                      
+
+
+
                                             
-                                            break
-
-
-
-
-                                                
                         #Resets the loop
                         else:                         
                             detected_gesture = label
@@ -356,10 +401,19 @@ def compare_gesture_live(threshold=0.05, hold_time=1.2, history_frames=5):
         cv2.imshow("Sawyer Head Camera - Gesture Recognition", frame)
         
         #Displays image to sawyer head screen
-        display_img = create_display_image(detected_gesture, word_spelled)
-        temp_image_path = "/tmp/sawyer_display.png"
-        cv2.imwrite(temp_image_path, display_img)  
-        head_display.display_image(temp_image_path, display_in_loop=False, display_rate=10.0)        
+        
+        if joint_control_mode == True:
+            display_img = create_display_image2(detected_gesture, word_spelled)
+            temp_image_path = "/tmp/sawyer_display.png"
+            cv2.imwrite(temp_image_path, display_img)
+            head_display.display_image(temp_image_path, display_in_loop=False, display_rate=10.0) 
+             
+        else:
+            display_img = create_display_image1(detected_gesture, word_spelled)
+            temp_image_path = "/tmp/sawyer_display.png"
+            cv2.imwrite(temp_image_path, display_img)  
+            head_display.display_image(temp_image_path, display_in_loop=False, display_rate=10.0) 
+              
         
         #Closes script if '.' is pressed
         if cv2.waitKey(1) & 0xFF == 46:
@@ -369,4 +423,4 @@ def compare_gesture_live(threshold=0.05, hold_time=1.2, history_frames=5):
 
 #Used as guard for against other scripts allowing it to run properly if called
 if __name__ == "__main__":
-    compare_gesture_live(threshold=0.06, history_frames=5) 
+    compare_gesture_live() 
