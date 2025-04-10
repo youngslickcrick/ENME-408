@@ -237,6 +237,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
   
     cameras.set_callback(camera_name, camera_callback, rectify_image=True, callback_args=(camera_name,))
  
+    delta = 0
     increment = 0
     change_increment = False
     joint_control_mode = False 
@@ -365,13 +366,13 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                     increment = 0
                                     if word_spelled:
                                         word_spelled.pop()  
-                                        print(f"Word after backspace: {''.join(word_spelled)}")
+                                        #print(f"Word after backspace: {''.join(word_spelled)}")
                                 
 
                                 #Combines latest letter to last letter        
                                 else:
                                     word_spelled.append(label)  
-                                    print(f"Current word: {''.join(word_spelled)}")
+                                    #print(f"Current word: {''.join(word_spelled)}")
                                    
                                     charac = confirmed_gesture
                                     
@@ -429,7 +430,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                             print("Increment Changed to Slow")
                                             sleep = 0.001
                                             
-                                        elif change_increment:
+                                        elif change_increment == True:
                                             if confirmed_gesture == "I":
                                                 delta = increment 
                                             elif confirmed_gesture == "D":
@@ -463,8 +464,20 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                             #j4
                                             #j5 decrease is up
                                             #j6
+                                    elif charac == 'S':
+                                        j_a = limb.joint_angles()
+                                        with open("saved_joint_angles","w") as f:
+                                            json.dump(j_a, f)
 
+                                        
+                                    elif charac == 'E':
+                                        with open("saved_joint_angles", "r") as f:
+                                            x = json.load(f)
                                             
+                                        #limb.set_joint_velocities(0.4)    
+                                        limb.move_to_joint_positions(x)
+
+ 
                         #Resets the loop
                         else:                         
                             detected_gesture = label
