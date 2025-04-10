@@ -138,16 +138,16 @@ def create_display_image2(detected_gesture, word_spelled):
     cv2.putText(image, text_word, (50, 400), font, font_scale, color, thickness)
     
     
-    if increment == 1:
+    if increment == 0.5:
         incr = "Large"
-    elif increment == 0.5:
+    elif increment == 0.25:
         incr = "Medium"
-    elif increment == 0.1:
+    elif increment == 0.125:
         incr = "Small"
     else:
         incr = "Default"
         
-    text_word = f"Increment {incr}"
+    text_word = f"Increment: {incr}"
     cv2.putText(image, text_word, (50, 500), font, 1, color, 2)        
         
         
@@ -333,7 +333,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                     gesture_start_time = None
                                     pos_mode = True
                                     increment = 0
-                                    
+                                    change_increment = False
                                     sword = ''.join(word_spelled)
 
                                     """
@@ -454,9 +454,15 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                             #head_pan(newlb)
                                             print(f"{confirmed_gesture} {joint} to {new_position}")
                                             time.sleep(0.0001)
-                                      
-
-
+                                             
+                                            #from zero pos
+                                            #j0 increase ccw
+                                            #j1 decrease is up
+                                            #j2 .
+                                            #j3 decrease is up
+                                            #j4
+                                            #j5 decrease is up
+                                            #j6
 
                                             
                         #Resets the loop
