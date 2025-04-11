@@ -38,7 +38,10 @@ increment = 0
 incr = None
 change_increment = False
 pos_mode = True
-
+number = 0
+save_mode = False
+saved_angle_mode = False
+charac = None
 #FROM MEDIAPIPE TEMPLATE: Mediapipe initialization
 mp_hands = mp.solutions.hands
 hands = mp_hands.Hands(static_image_mode=False, 
@@ -183,7 +186,43 @@ def create_display_image3(detected_gesture, word_spelled):
     
     return image    
 
+#Save mode
+def create_display_image4(detected_gesture, word_spelled):
+    global save_mode
+    global saved_angle_mode
+    global number 
+    global charac
     
+    width, height = 1024, 600  
+    image = np.zeros((height, width, 3), dtype=np.uint8) 
+
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    font_scale = 2
+    thickness = 4
+    color = (255, 255, 255)  
+
+    
+    text_detected = f"Detected: {detected_gesture}" if detected_gesture else "Detected: None"
+    cv2.putText(image, text_detected, (50, 200), font, font_scale, color, thickness)
+
+    if charac in ['O', '1', '2', '3', '4', '5', '6']:
+        number = charac 
+    if increment == 0.5:
+        incr = "Large"
+    elif increment == 0.25:
+        incr = "Med"
+    elif increment == 0.125:
+        incr = "Small"
+    if charac == 'S':
+        text_word = f"Entering Save Mode, select save file"
+    elif charac == "E":
+        text_word = f"Opening saved angles, select saved file"
+    cv2.putText(image, t, (50, 400), font, font_scale, color, thickness)
+    
+    return image    
+
+
+"""
 def head_pan(newlb):
     global currentlb
     
@@ -196,7 +235,7 @@ def head_pan(newlb):
     ratio = 0.96098
     #pan_mode()
     hp.set_pan(currenthp+diff*ratio, speed=0.5)
-
+"""
     
 
 
