@@ -38,6 +38,7 @@ increment = 0
 incr = None
 change_increment = False
 pos_mode = True
+
 #FROM MEDIAPIPE TEMPLATE: Mediapipe initialization
 mp_hands = mp.solutions.hands
 hands = mp_hands.Hands(static_image_mode=False, 
@@ -335,6 +336,8 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                     pos_mode = True
                                     increment = 0
                                     change_increment = False
+                                    save_mode = False
+                                    saved_angles_mode = False
                                     sword = ''.join(word_spelled)
 
                                     """
@@ -419,7 +422,8 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                             increment = 0.5
                                             sleep = 0.05
                                             print("Increment Changed to Fast")
-                                            
+
+                                      #get rid of default make that the new medium
                                         elif confirmed_gesture == "M" and change_increment == True:
                                             increment = 0.25
                                             print("Increment Changed to Medium")
@@ -478,15 +482,15 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                             print(f'Joint angles saved to file {number}')
                                             
                                     elif charac == 'E':
-                                        saved_mov_mode = True
+                                        saved_angles_mode = True
                                         pos_mode = False
                                         print('Entering Saved Angles Mode, select saved file')
                                         
-                                    elif saved_mov_mode and charac in ['1','2','3','4','5','6','7','8','9']:
+                                    elif saved_angles_mode and charac in ['1','2','3','4','5','6','7','8','9']:
                                         number = charac
                                         with open(f"saved_joint_angles_{number}", "r") as f:
                                             x = json.load(f)
-                                            print(f'Moving saved angles {number}')  
+                                            print(f'Moving to saved angles {number}')  
                                         limb.move_to_joint_positions(x)
 
  
