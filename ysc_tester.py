@@ -144,9 +144,7 @@ def create_display_image2(detected_gesture, word_spelled):
     
     if increment == 0.5:
         incr = "Large"
-    elif increment == 0.25:
-        incr = "Medium"
-    elif increment == 0.125:
+    elif increment == 0.01:
         incr = "Small"
     else:
         incr = "Default"
@@ -174,13 +172,14 @@ def create_display_image3(detected_gesture, word_spelled):
     cv2.putText(image, text_detected, (50, 200), font, font_scale, color, thickness)
 
     
-    if increment == 0.5:
-        incr = "Large"
-    elif increment == 0.25:
-        incr = "Med"
-    elif increment == 0.125:
-        incr = "Small"
-        
+    #if increment == 0.5:
+     #   incr = "Large"
+    #elif increment == 0.25:
+    #    incr = "Default"
+   # elif increment == 0.01:
+  #      incr = "Small"
+
+  
     text_word = f"Change Increment"
     cv2.putText(image, text_word, (50, 400), font, font_scale, color, thickness)
     
@@ -189,7 +188,7 @@ def create_display_image3(detected_gesture, word_spelled):
 #Save mode
 def create_display_image4(detected_gesture, word_spelled):
     global save_mode
-    global saved_angle_mode
+    global saved_angles_mode
     global number 
     global charac
     
@@ -205,19 +204,19 @@ def create_display_image4(detected_gesture, word_spelled):
     text_detected = f"Detected: {detected_gesture}" if detected_gesture else "Detected: None"
     cv2.putText(image, text_detected, (50, 200), font, font_scale, color, thickness)
 
-    if charac in ['O', '1', '2', '3', '4', '5', '6']:
-        number = charac 
-    if increment == 0.5:
-        incr = "Large"
-    elif increment == 0.25:
-        incr = "Med"
-    elif increment == 0.125:
-        incr = "Small"
     if charac == 'S':
-        text_word = f"Entering Save Mode, select save file"
+        text_word = f"Save mode, select save file"
     elif charac == "E":
-        text_word = f"Opening saved angles, select saved file"
-    cv2.putText(image, t, (50, 400), font, font_scale, color, thickness)
+        text_word = f"Saved angles mode, select saved file"
+    elif save_mode and charac in ['1','2','3','4','5','6','7','8','9']:
+        number = charac
+        text_word = f"Current joint angles saved in saved_joint_angles_{number}"
+    elif saved_angles_mode and charac in ['1','2','3','4','5','6','7','8','9']:
+        number = charac
+        text_word = f"Moving to saved_joint_angles_{number}"
+
+      
+    cv2.putText(image, text_word, (50, 400), font, font_scale, color, thickness)
     
     return image    
 
@@ -461,17 +460,11 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                             increment = 0.5
                                             sleep = 0.05
                                             print("Increment Changed to Fast")
-
-                                      #get rid of default make that the new medium
-                                        elif confirmed_gesture == "M" and change_increment == True:
-                                            increment = 0.25
-                                            print("Increment Changed to Medium")
-                                            sleep = 0.01
-                                            
+                                          
                                         elif confirmed_gesture == "W" and change_increment == True:
-                                            increment = 0.125
+                                            increment = 0.01
                                             print("Increment Changed to Slow")
-                                            sleep = 0.001
+                                            sleep = 0.00001
                                             
                                         elif change_increment == True:
                                             if confirmed_gesture == "I":
@@ -487,9 +480,9 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
 
                                         else:
                                             if confirmed_gesture == "I":
-                                                delta = 0.01  
+                                                delta = 0.25 
                                             elif confirmed_gesture == "D":
-                                                delta = -0.01
+                                                delta = -0.25
                                             current_position = limb.joint_angle(joint)
                                             new_position = current_position + delta
                                             limb.set_joint_position_speed(speed = 0.1)
@@ -497,7 +490,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                             #newlb = limb.joint_angle('right_j0')
                                             #head_pan(newlb)
                                             print(f"{confirmed_gesture} {joint} to {new_position}")
-                                            time.sleep(0.0001)
+                                            time.sleep(0.01)
                                              
                                             #from zero pos
                                             #j0 increase ccw
@@ -575,7 +568,13 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
             temp_image_path = "/tmp/sawyer_display.png"
             cv2.imwrite(temp_image_path, display_img)  
             head_display.display_image(temp_image_path, display_in_loop=False, display_rate=10.0) 
-
+          
+        elif save_mode == True and pos_mode == False or saved_angles_mode == True and pos_mode == False:
+            display_img = create_display_image4(detected_gesture, word_spelled)
+            temp_image_path = "/tmp/sawyer_display.png"
+            cv2.imwrite(temp_image_path, display_img)  
+            head_display.display_image(temp_image_path, display_in_loop=False, display_rate=10.0)
+          
         else:
             display_img = create_display_image1(detected_gesture, word_spelled)
             temp_image_path = "/tmp/sawyer_display.png"
