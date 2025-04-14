@@ -38,7 +38,16 @@ increment = 0
 incr = None
 change_increment = False
 pos_mode = True
-#FROM MEDIAPIPE TEMPLATE: Mediapipe initialization
+number = 0
+save_mode = False
+saved_angles_mode = False
+charac = None
+text_word = None
+text_word1 = None
+text_word2 = None
+save_word = None
+
+#FROM MEDIAPIPE TEMPLATE: Mediapipe settings, decides the accuracy and mode of the landmarks
 mp_hands = mp.solutions.hands
 hands = mp_hands.Hands(static_image_mode=False, 
                        max_num_hands=1,
@@ -49,6 +58,7 @@ mp_drawing = mp.solutions.drawing_utils
 
 #Opens and closes the sawyer gripper
 def grip(close=False):
+    #Using the gripper class from intera_interface
     gripper = intera_interface.Gripper()
     
     if close:
@@ -59,75 +69,99 @@ def grip(close=False):
         
 #FROM RETHINKROBOTICS TEMPLATE:Processes images from Sawyer's head camera
 def camera_callback(img_data, camera_name):
+    
+    #Using 'global' to call this variable
     global latest_frame
+    
+    #Try allows one to test code for errors
     try:
+        #Converting ros images messages to cv2 for processing
         frame = bridge.imgmsg_to_cv2(img_data, "bgr8")
-
+        
+        #Mediapipe requries a flipped frame
         latest_frame = cv2.flip(frame, 1)
-
+    
+    #Except handles the error
     except CvBridgeError as e:
         rospy.logerr(f"CV Bridge Error: {e}")
 
 #Normalizes landmarks to the wrist landmark
 def normalize_landmarks(landmarks): 
-
+    
+    #The first landmark located at the wrist
     wrist = landmarks[0]  
+    #Creates an empty list to intialize 
     normalized_landmarks = [] 
     
+    #Calls each landmark for this equation
     for lm in landmarks:
         norm_x = lm['x'] - wrist['x']
         norm_y = lm['y'] - wrist['y']
         norm_z = lm['z'] - wrist['z']
         normalized_landmarks.append({'x': norm_x, 'y': norm_y, 'z': norm_z})
-
+    #Returns the value of the calculated function
     return normalized_landmarks
+
 
 #Attributes a weighted system to the coordinates
 def weighted_distance(saved, detected):
+
     weight_x = 1.0 
     weight_y = 1.0  
+    #Z is the distance away from the camera
     weight_z = 0.5 
 
-  
+    #Using the weights in tangent with Euclidean distance formula to measure the distance between saved and detected landmarks
     return np.sqrt(
         (weight_x * (saved['x'] - detected['x']))**2 +
         (weight_y * (saved['y'] - detected['y']))**2 +
         (weight_z * (saved['z'] - detected['z']))**2)
 
 
-#Displays translated gestures on sawyer head screen
+#Displays screen for posistion mode
 def create_display_image1(detected_gesture, word_spelled):
 
+    #1024x600 pixels
     width, height = 1024, 600  
-    image = np.zeros((height, width, 3), dtype=np.uint8) 
+    
+    '''
+    #np.full(dimensions, color, dtype), the alternative would be np.zeroes(dimensions, dtype)
+    #Used to create blank images where text can be added
+    #(0,0,0) = black, (255,255,255) = white
+    #dtype is the range in which the pixels will be defined, uint8 defines the range as 0-255 which is standard for images
+    '''
+    image = np.full((height, width, 3), (255, 255, 255), dtype=np.uint8) 
+
 
     font = cv2.FONT_HERSHEY_SIMPLEX
     font_scale = 3
     thickness = 5
-    color = (255, 255, 255)  
+    color = (0, 0, 0)  
 
-    
+    #shortened if else statement
     text_detected = f"Detected: {detected_gesture}" if detected_gesture else "Detected: None"
+    #cv2.putText(image, text, location, font, font_scale, color, thickness)
     cv2.putText(image, text_detected, (50, 200), font, font_scale, color, thickness)
 
     
     text_word = f"Word: {''.join(word_spelled)}"
     cv2.putText(image, text_word, (50, 400), font, font_scale, color, thickness)
     
+    #Returns the image so that it can be displayed
     return image
     
     
-#Joint mode
+#Displays screen for joint control mode
 def create_display_image2(detected_gesture, word_spelled):
     global incr
     global joint
     width, height = 1024, 600  
-    image = np.zeros((height, width, 3), dtype=np.uint8) 
+    image = np.full((height, width, 3), (255, 255, 255), dtype=np.uint8) 
 
     font = cv2.FONT_HERSHEY_SIMPLEX
     font_scale = 2
     thickness = 4
-    color = (255, 255, 255)  
+    color = (0, 0, 0)  
 
     
     text_detected = f"Detected: {detected_gesture}" if detected_gesture else "Detected: None"
@@ -137,12 +171,10 @@ def create_display_image2(detected_gesture, word_spelled):
     text_word = f"Controlling joint: {joint}"
     cv2.putText(image, text_word, (50, 400), font, font_scale, color, thickness)
     
-    
+    #Displays the increment depending on the setting selected
     if increment == 0.5:
         incr = "Large"
-    elif increment == 0.25:
-        incr = "Medium"
-    elif increment == 0.125:
+    elif increment == 0.01:
         incr = "Small"
     else:
         incr = "Default"
@@ -153,36 +185,83 @@ def create_display_image2(detected_gesture, word_spelled):
         
     return image
     
-#Change increment
+#Displays screen for changing the increment
 def create_display_image3(detected_gesture, word_spelled):
     global incr
     global increment
+    
     width, height = 1024, 600  
-    image = np.zeros((height, width, 3), dtype=np.uint8) 
+    image = np.full((height, width, 3), (255, 255, 255), dtype=np.uint8) 
 
     font = cv2.FONT_HERSHEY_SIMPLEX
     font_scale = 2
     thickness = 4
-    color = (255, 255, 255)  
+    color = (0, 0, 0)  
 
-    
     text_detected = f"Detected: {detected_gesture}" if detected_gesture else "Detected: None"
     cv2.putText(image, text_detected, (50, 200), font, font_scale, color, thickness)
 
-    
-    if increment == 0.5:
-        incr = "Large"
-    elif increment == 0.25:
-        incr = "Med"
-    elif increment == 0.125:
-        incr = "Small"
-        
     text_word = f"Change Increment"
     cv2.putText(image, text_word, (50, 400), font, font_scale, color, thickness)
     
     return image    
 
+#Displays screen for save mode or saved angles mode
+def create_display_image4(detected_gesture, word_spelled):
+    global save_mode
+    global saved_angles_mode
+    #global number 
+    global charac
+    global text_word
+    global text_word1
+    global text_word2
+    global save_word
     
+    width, height = 1024, 600  
+    image = np.full((height, width, 3), (255, 255, 255), dtype=np.uint8) 
+
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    font_scale = 1.5
+    thickness = 3
+    color = (0, 0, 0)  
+
+    
+    text_detected = f"Detected: {detected_gesture}" if detected_gesture else "Detected: None"
+    cv2.putText(image, text_detected, (50, 200), font, font_scale, color, thickness)
+
+    if save_mode == True:
+        save_word = f"Save mode, select save file"
+        saved_angles_mode = False
+        if charac in ['1','2','3','4','5','6','7','8','9']:
+            number = charac
+            text_word1 = "Current joint angles saved in" 
+            text_word2 = f"saved_joint_angles_{number}"
+        else:
+            text_word1 = "Waiting for a number gesture..."
+            text_word2 = ""
+       
+        
+    elif saved_angles_mode == True:
+        save_word = f"Saved angles mode, select saved file"
+        save_mode = False
+        if charac in ['1','2','3','4','5','6','7','8','9']:
+            number = charac
+            text_word1 = "Moving to" 
+            text_word2 = f"saved_joint_angles_{number}"
+        else:
+            text_word1 = "Waiting for a number gesture..."
+            text_word2 = ""
+            
+    
+    cv2.putText(image, save_word, (50, 110), font, 1, color, 2)
+    cv2.putText(image, text_word1, (50, 400), font, font_scale, color, thickness)
+    cv2.putText(image, text_word2, (50, 450), font, font_scale, color, thickness)    
+    
+    return image    
+
+
+#Normalizes the head pan to joint0 axis
+"""
 def head_pan(newlb):
     global currentlb
     
@@ -195,7 +274,7 @@ def head_pan(newlb):
     ratio = 0.96098
     #pan_mode()
     hp.set_pan(currenthp+diff*ratio, speed=0.5)
-
+"""
     
 
 
@@ -206,6 +285,9 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
     global incr
     global change_increment
     global pos_mode
+    global save_mode
+    global saved_angles_mode
+    global charac 
     
     SAVED_GESTURES_PATH = "/home/ysc/ros_ws/src/intera_sdk/intera_examples/scripts/captured_gestures_ros"
     saved_landmarks = {}
@@ -238,10 +320,10 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
     cameras.set_callback(camera_name, camera_callback, rectify_image=True, callback_args=(camera_name,))
  
     delta = 0
-    increment = 0
-    change_increment = False
-    joint_control_mode = False 
-    joint = None
+    increment = 0 #
+    change_increment = False#
+    joint_control_mode = False
+    joint = None #
     gesture_start_time = None
     detected_gesture = None
     confirmed_gesture = None
@@ -327,7 +409,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                 #Confirms spelled word                        
                                 if label == "finish":
                                     print(f"Word Confirmed: {''.join(word_spelled)}")
-                                    hold_time = 1.2
+                                    hold_time = 1
                                     joint_control_mode = False
                                     joint = None
                                     confirmed_gesture = None
@@ -335,6 +417,8 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                     pos_mode = True
                                     increment = 0
                                     change_increment = False
+                                    save_mode = False
+                                    saved_angles_mode = False
                                     sword = ''.join(word_spelled)
 
                                     """
@@ -419,16 +503,11 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                             increment = 0.5
                                             sleep = 0.05
                                             print("Increment Changed to Fast")
-                                            
-                                        elif confirmed_gesture == "M" and change_increment == True:
-                                            increment = 0.25
-                                            print("Increment Changed to Medium")
-                                            sleep = 0.01
-                                            
+                                          
                                         elif confirmed_gesture == "W" and change_increment == True:
-                                            increment = 0.125
+                                            increment = 0.01
                                             print("Increment Changed to Slow")
-                                            sleep = 0.001
+                                            sleep = 0.00001
                                             
                                         elif change_increment == True:
                                             if confirmed_gesture == "I":
@@ -444,9 +523,9 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
 
                                         else:
                                             if confirmed_gesture == "I":
-                                                delta = 0.01  
+                                                delta = 0.25 
                                             elif confirmed_gesture == "D":
-                                                delta = -0.01
+                                                delta = -0.25
                                             current_position = limb.joint_angle(joint)
                                             new_position = current_position + delta
                                             limb.set_joint_position_speed(speed = 0.1)
@@ -454,7 +533,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                             #newlb = limb.joint_angle('right_j0')
                                             #head_pan(newlb)
                                             print(f"{confirmed_gesture} {joint} to {new_position}")
-                                            time.sleep(0.0001)
+                                            time.sleep(0.01)
                                              
                                             #from zero pos
                                             #j0 increase ccw
@@ -464,18 +543,38 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                             #j4
                                             #j5 decrease is up
                                             #j6
+                                  
                                     elif charac == 'S':
-                                        j_a = limb.joint_angles()
-                                        with open("saved_joint_angles","w") as f:
-                                            json.dump(j_a, f)
+                                        save_mode = True
+                                        pos_mode = False
+                                        saved_angles_mode = False
+                                        joint_control_mode = False
+                                        change_increment == False
+                                        hold_time = 1
+                                        print('Entering Save Mode, select save file')
 
-                                        
-                                    elif charac == 'E':
-                                        with open("saved_joint_angles", "r") as f:
-                                            x = json.load(f)
+                                    elif save_mode and charac in ['1','2','3','4','5','6','7','8','9']:
+                                        number = charac
+                                        j_a = limb.joint_angles()
+                                        with open(f"saved_joint_angles_{number}","w") as f:
+                                            json.dump(j_a, f)
+                                            print(f'Joint angles saved to file {number}')
                                             
-                                        #limb.set_joint_velocities(0.4)    
-                                        limb.move_to_joint_positions(x)
+                                    elif charac == 'E':
+                                        saved_angles_mode = True
+                                        save_mode = False
+                                        pos_mode = False
+                                        joint_control_mode = False
+                                        change_increment == False
+                                        hold_time = .8
+                                        print('Entering Saved Angles Mode, select saved file')
+                                        
+                                    elif saved_angles_mode and charac in ['1','2','3','4','5','6','7','8','9']:
+                                        number = charac
+                                        with open(f"saved_joint_angles_{number}", "r") as f:
+                                            x = json.load(f)
+                                            print(f'Moving to saved angles {number}')  
+                                        limb.move_to_joint_positions(x,threshold=0.008726646,test=None)
 
  
                         #Resets the loop
@@ -508,7 +607,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
         
         #Displays image to sawyer head screen
         
-        if joint_control_mode == True and change_increment == False or change_increment == True and increment != 0:
+        if joint_control_mode == True and change_increment == False and save_mode == False and saved_angles_mode == False or change_increment == True and increment != 0 and save_mode == False and saved_angles_mode == False:
             display_img = create_display_image2(detected_gesture, word_spelled)
             temp_image_path = "/tmp/sawyer_display.png"
             cv2.imwrite(temp_image_path, display_img)
@@ -520,7 +619,13 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
             temp_image_path = "/tmp/sawyer_display.png"
             cv2.imwrite(temp_image_path, display_img)  
             head_display.display_image(temp_image_path, display_in_loop=False, display_rate=10.0) 
-
+          
+        elif save_mode == True and pos_mode == False or saved_angles_mode == True and pos_mode == False:
+            display_img = create_display_image4(detected_gesture, word_spelled)
+            temp_image_path = "/tmp/sawyer_display.png"
+            cv2.imwrite(temp_image_path, display_img)  
+            head_display.display_image(temp_image_path, display_in_loop=False, display_rate=10.0)
+          
         else:
             display_img = create_display_image1(detected_gesture, word_spelled)
             temp_image_path = "/tmp/sawyer_display.png"
