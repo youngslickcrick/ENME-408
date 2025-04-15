@@ -724,22 +724,26 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
         cv2.imshow("Sawyer Head Camera - Gesture Recognition", frame)
 
         # Displays images for Joint Control Mode
-        if joint_control_mode == True and change_increment == False and save_mode == False and saved_angles_mode == False and traj_mode == False: #or change_increment == True  and increment != 0 and save_mode == False and saved_angles_mode == False:
-            display_img = create_display_image2(detected_gesture, word_spelled)
+        if joint_control_mode == True and change_increment == False and save_mode == False and saved_angles_mode == False and traj_mode == False:
+            # Defines the image created by the function
+            display_img = create_display_image2(detected_gesture)
+            # Defines the path where the image will be saved (tmp is used to store files temporarily)
             temp_image_path = "/tmp/sawyer_display.png"
+            # Saves image to the path
             cv2.imwrite(temp_image_path, display_img)
+            # Displays image to sawyer screen
             head_display.display_image(temp_image_path, display_in_loop=False, display_rate=10.0) 
         
         # Displays images for Change Increment
         elif change_increment == True: 
-            display_img = create_display_image3(detected_gesture, word_spelled)
+            display_img = create_display_image3(detected_gesture)
             temp_image_path = "/tmp/sawyer_display.png"
             cv2.imwrite(temp_image_path, display_img)  
             head_display.display_image(temp_image_path, display_in_loop=False, display_rate=10.0)
           
         # Displays images for Save Mode
         elif save_mode == True and pos_mode == False or saved_angles_mode == True and pos_mode == False:
-            display_img = create_display_image4(detected_gesture, word_spelled)
+            display_img = create_display_image4(detected_gesture)
             temp_image_path = "/tmp/sawyer_display.png"
             cv2.imwrite(temp_image_path, display_img)  
             head_display.display_image(temp_image_path, display_in_loop=False, display_rate=10.0)
@@ -761,6 +765,8 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
         
         # Closes script if '.' is pressed
         if cv2.waitKey(1) & 0xFF == 46:
+
+            #Displays the robot's default image
             image_path = '/home/ysc/Pictures/Default_Image.png'
             head_display = intera_interface.HeadDisplay()
             head_display.display_image(image_path, display_in_loop=False, display_rate=1.0)
