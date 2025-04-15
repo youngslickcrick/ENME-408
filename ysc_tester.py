@@ -8,16 +8,17 @@
 # Section 1: Libary
 # ------------------------------------------------------------------------------------------
 
-#rospy: Python client library for ROS that enables programmers to communicate with ROS topics, services, and parameters. In other words it uses the ROS python API for communication with Sawyer.
-#cv2(openCV): Imports the openCV library which provides functions for and classes for image Image processing and computer vision. It’s essential in opening up sawyer’s cameras.
-#os (operating systems): This allows for file manipulation and management, this is needed when saving images and javascript object notation (json) files to a specific directory.
-#json(Javascript object notation): Used to store and transfer data, in this code it’s used to save the coordinates of the hand landmarks in JSON format.
-#mediapipe: This is used for the hand tracking.
-#intera_interface: The python API for communicating with Intera-enabled robots
-#cv_bridge: The bridge between ROS image messages and openCV image representation
-#time: Is used for handling time based operations it’s used when measuring how long a gesture has been held.
-#numpy: Is used to call mathematical equations in multiple functions
-#deque: Is used for storing past frames, helps improve the accuracy of the gestures being by comparing the last few frames and making sure most of them detect the last gesture.
+# rospy: Python client library for ROS that enables programmers to communicate with ROS topics, services, and parameters. In other words it uses the ROS python API for communication with Sawyer.
+# cv2(openCV): Imports the openCV library which provides functions for and classes for image Image processing and computer vision. It’s essential in opening up sawyer’s cameras.
+# os(operating systems): This allows for file manipulation and management, this is needed when saving images and javascript object notation (json) files to a specific directory.
+# json(Javascript object notation): Used to store and transfer data, in this code it’s used to save the coordinates of the hand landmarks in JSON format.
+# time: Is used for handling time based operations it’s used when measuring how long a gesture has been held.
+# numpy: Is used to call mathematical equations in multiple functions
+# mediapipe: This is used for the hand tracking.
+# intera_interface: The python API for communicating with Intera-enabled robots
+# deque: Is used for storing past frames, helps improve the accuracy of the gestures being by comparing the last few frames and making sure most of them detect the last gesture.
+# Cvbridge: The bridge between ROS image messages and openCV image representation
+# CvBridgeError: Used for handling errors in openCV
 import rospy
 import cv2
 import os
