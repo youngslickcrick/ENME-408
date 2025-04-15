@@ -30,6 +30,8 @@ from collections import deque
 from cv_bridge import CvBridge, CvBridgeError
 
 
+
+
 # Section 2: Global Variables and Mediapipe intialization
 # ---------------------------------------------------------------------------------------------
 
@@ -58,7 +60,10 @@ hands = mp_hands.Hands(static_image_mode=False,
                        min_tracking_confidence=0.5)
 mp_drawing = mp.solutions.drawing_utils
 
-# Section 2: Basic Functions
+
+
+
+# Section 3: Basic Functions
 # ---------------------------------------------------------------------------------------------
 # Functions that will be accessed in and outside of the main function compare_gestures_live()
 
@@ -303,19 +308,17 @@ def head_pan(newlb):
 """
     
 
-# Section 3: Main Function
+# Section 4: Main Function
 # ---------------------------------------------------------------------------------------------
 # Compares the saved coordinates of landmarks to the new ones detected by the camera
 
 # MODES
 #---------------------------
-# POSITION MODE: Move to pre-saved joint angles that are saved directly in the code
+# POSITION MODE: Move to joint angles that are saved directly in the code
 # JOINT CONTROL MODE: Individually control each joint by increasing or decreasing its joint angle by a set increment, (Increment can be changed with change increment mode)
 # SAVE MODE: Save the current joint angles of the robot in 1 of 9 files
 # SAVED ANGLES EXECUTION MODE: Execute the saved joint angles individually
 # TRAJECTORY MODE: Execute the saved joint angles in succession creating a path for the robot
-
-
 
 def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
     global increment
@@ -331,12 +334,11 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
     # Intializes rospy nodes for running
     rospy.init_node("sawyer_gesture_recognition", anonymous=True) 
     
-    
     # Defining the saved gestures path
     SAVED_GESTURES_PATH = "/home/ysc/ros_ws/src/intera_sdk/intera_examples/scripts/captured_gestures_ros"
     # Intializing saved landmarks
     saved_landmarks = {}
-    # Defining gesture labels
+    # Defining which gesture labels will be utilized
     gesture_labels1 = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "1","2","3","4","5","6","7","8","9" ,"finish", "backspace"]  
 
     # For every label in gesture labels
@@ -417,7 +419,6 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
         #FROM MEDIAPIPE TEMPLATE: Draws the landmarks on the hand
         if results.multi_hand_landmarks:
             for hand_landmarks in results.multi_hand_landmarks:
-              
                 mp_drawing.draw_landmarks(
                     frame, hand_landmarks, mp_hands.HAND_CONNECTIONS,
                     mp_drawing.DrawingSpec(color=(0, 255, 0), thickness=2, circle_radius=4),
@@ -474,24 +475,11 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                     sword = ''.join(word_spelled)
 
                                     """
-                                    if sword == 'B':
-                                        limb.move_to_joint_positions(C1)
-                                    elif sword == 'A':
-                                        limb.move_to_joint_positions(C3)
-                                        #Zero
-                                    elif sword == 'Q':
-                                        limb.move_to_joint_positions(O)
-                                        
-                                        #Grip
-                                    elif sword == 'Grip':
-                                        grip(close=True)
-                                        #Ungrip
-                                    elif sword == 'Ungrip':
-                                        grip(close=False) 
+                                    if sword == 'WAVE':
+                                        limb.move_to_joint_positions(wave)
                                     """   
 
-                                   
-                                    #After word is confirmed, new the list is emptied  
+                                    #After word is confirmed, the list is emptied  
                                     word_spelled = []
 
 
@@ -511,83 +499,98 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                     #print(f"Current word: {''.join(word_spelled)}")
                                    
                                     charac = confirmed_gesture
-                                    
+                                  
+                                    #If 'A' is signed, arm moves to C3
                                     if charac == 'A' and pos_mode == True:
                                         limb.set_joint_position_speed(speed = 0.2)
-                                        limb.move_to_joint_positions(C3)
-
+                                        limb.move_to_joint_positions(C3)                                      
+                                    #If 'B' is signed arm moves to the zero position
                                     elif charac == 'B' and pos_mode == True:
                                         limb.set_joint_position_speed(speed = 0.2)
                                         limb.move_to_joint_positions(O)
-
-                                    #Zero
+                                    #If 'C' is signed, arm moves to C1
                                     elif charac == 'C' and pos_mode == True:
                                         limb.set_joint_position_speed(speed = 0.2)
                                         limb.move_to_joint_positions(C1)
                                       
                                         
-                                    #Grip
+                                    #If 'G' is signed the gripper will close
                                     if charac == 'G' and gripper == True:
                                         grip(close=True)
-                                    #Ungrip
+                                    #If 'U' is signed the gripper will open
                                     elif charac == 'U' and gripper == True:
                                         grip(close=False)
                                     
- 
+                                    #If 'L' is signed Joint Control Mode will turn on
                                     elif charac == 'L':
                                         print("Joint control mode: Select joint number")
                                         pos_mode = False
                                         joint_control_mode = True
                                         hold_time = 0.0
                                         gesture_start_time = time.time()
-                                                   
+
+                                    #If Joint Control Mode is on and a joint has been selected 'I' or 'D' can be used to increase or decrease the joint angle respectively
+                                    #A joint can be slected by signing a number 0-6
                                     elif joint_control_mode and joint is None and charac in ['O', '1', '2', '3', '4', '5', '6']:
                                         number = '0' if charac == 'O' else charac
                                         joint = f'right_j{number}'
                                         print(f"Controlling joint: {joint}")
                                         print(" Use 'I' to increase, 'D' to decrease, 'finish' to exit.")
-                                    elif joint_control_mode and confirmed_gesture in ["I", "D", "P","F","M","W"]:
+                                   
+                                    #If Joint Control Mode is on, the increment at which the joint angle can be altered can be edited if 'P' is signed
+                                    elif joint_control_mode and confirmed_gesture in ["I", "D", "P", "F", "M", "W"]:
                                         if confirmed_gesture == "P":
                                             print("CHANGE INCREMENT")
                                             change_increment = True
-                                            
+
+                                        #If 'F' is signed while change increment is on the increment will be changed to large
                                         elif confirmed_gesture == "F" and change_increment == True:
                                             increment = 0.5
                                             sleep = 0.05
-                                            print("Increment Changed to Fast")
+                                            print("Increment Changed to Large")
                                             change_increment = False
-                                          
+                                        #If 'W' is signed while change increment is on the increment will be changed to small
                                         elif confirmed_gesture == "W" and change_increment == True:
                                             increment = 0.01
                                             sleep = 0.00001
-                                            print("Increment Changed to Slow")
+                                            print("Increment Changed to Small")
                                             change_increment = False
 
-                                            
+                                        #If change increment is true the incremental value at which the joint angles move will be changed from default
                                         elif change_increment == True:
                                             if confirmed_gesture == "I":
                                                 delta = increment 
                                             elif confirmed_gesture == "D":
                                                 delta = -1*increment
-                                                
+
+                                            #Try block used for catching errors
                                             try:
                                                 if joint != None:
+                                                    #PARTIALLY FROM RETHINKROBOTICS TEMPLATE
+                                                    #Current position of chosen joint
                                                     current_position = limb.joint_angle(joint)
+                                                    #Defining the new position by adding the increment
                                                     new_position = current_position + delta
+                                                    #Setting the speed at which the joint will move
                                                     limb.set_joint_position_speed(speed = 0.3)
+                                                    #Moves to new joint angle
                                                     limb.move_to_joint_positions({joint: new_position}, test=True)                             
                                                     print(f"{confirmed_gesture} {joint} to {new_position}")     
                                                 
                                                 elif change_increment == False and joint != None:
+                                                    #Error sent to the terminal if constraints are not met
                                                     rospy.logwarn("Change increment is false. Cannot change increment.")
                                                     
                                                 elif joint == None:
+                                                    #Error sent to the terminal if constraints are not met
                                                     rospy.logwarn("No joint selected. Cannot move.")
                                                     
                                             except Exception as e:
+                                                    #Error sent to the terminal if constraints are not met
                                                     rospy.logerr(f"Joint control error: {e}")
-                                            time.sleep(sleep)          
-
+                                            time.sleep(sleep) 
+                                          
+                                        #The incremental value at which the joint angles move will be set to default
                                         else:
                                             if confirmed_gesture == "I":
                                                 delta = 0.25 
@@ -610,20 +613,13 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                                     
                                             except Exception as e:
                                                 rospy.logerr(f"Joint control error: {e}")
+                                            time.sleep(0.01)
+
+                                            #EXPERIMENTAL CODE
                                             #newlb = limb.joint_angle('right_j0')
                                             #head_pan(newlb)
                                             
-                                            time.sleep(0.01)
-                                            
-                                            #from zero pos
-                                            #j0 increase ccw
-                                            #j1 decrease is up
-                                            #j2 .
-                                            #j3 decrease is up
-                                            #j4
-                                            #j5 decrease is up
-                                            #j6
-                                  
+                                    #If 'S' is signed Save Mode will turn on
                                     elif charac == 'S':
                                         save_mode = True
                                         pos_mode = False
@@ -633,13 +629,16 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                         hold_time = 1
                                         print('Entering Save Mode, select save file')
 
+                                    #If save mode is on select a number 1-9 to save the joint angles to that designated file
                                     elif save_mode and charac in ['1','2','3','4','5','6','7','8','9']:
                                         number = charac
                                         j_a = limb.joint_angles()
+                                        #Opens file based on number signed and writes the joint angles in json format to file
                                         with open(f"saved_joint_angles_{number}","w") as f:
                                             json.dump(j_a, f)
                                             print(f'Joint angles saved to file {number}')
-                                            
+
+                                    #If 'E' is signed Saved Angles Execution Mode will turn on
                                     elif charac == 'E':
                                         saved_angles_mode = True
                                         save_mode = False
@@ -648,14 +647,18 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                         change_increment == False
                                         hold_time = .8
                                         print('Entering Saved Angles Mode, select saved file')
-                                        
+
+                                    #If save angles mode is on select a number 1-9 to open the saved file and move the joint angles to
                                     elif saved_angles_mode and charac in ['1','2','3','4','5','6','7','8','9']:
                                         number = charac
+                                        #Opens file based on number signed and reads the joint angles
                                         with open(f"saved_joint_angles_{number}", "r") as f:
                                             x = json.load(f)
-                                            print(f'Moved to saved angles {number}')  
+                                            print(f'Moved to saved angles {number}')
+                                        #Executes read file
                                         limb.move_to_joint_positions(x,threshold=0.008726646,test=None)
-                                     
+
+                                    #If
                                     elif charac == 'Y':
                                          traj_mode = True
                                          pos_mode = False
