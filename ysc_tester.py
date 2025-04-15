@@ -670,11 +670,11 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
 
                                     #If 'H' is signed and Trajectory Mode is on saved files will be executed in succession
                                     elif charac == 'H' and traj_mode == True:
-                                         #defines the string of combined letters
+                                         #Defines the string of combined letters
                                          sword = ''.join(word_spelled)
                                          print('Moving to selected saved files')
                                          
-                                         #for every letter in the string the arm will move to those points
+                                         #For every letter in the string the arm will move to those points
                                          for letter in sword:
                                              try:
                                                  if letter == 'G':
@@ -687,6 +687,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                                      with open(f"saved_joint_angles_{letter}", "r") as f:
                                                          x = json.load(f)
                                                          limb.move_to_joint_positions(x, threshold=0.008726646, test=None)
+                                             #If a number, 'G', or 'U' is not signed, this error will be thrown
                                              except Exception as e:
                                                   print("Error: Letter not in directory")
                                                 
