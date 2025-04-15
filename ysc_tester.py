@@ -53,6 +53,7 @@ text_word1 = None
 text_word2 = None
 save_word = None
 traj_mode = False
+
 #FROM MEDIAPIPE TEMPLATE: Mediapipe settings, decides the accuracy and mode of the landmarks
 mp_hands = mp.solutions.hands
 hands = mp_hands.Hands(static_image_mode=False, 
