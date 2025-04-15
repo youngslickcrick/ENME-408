@@ -210,7 +210,6 @@ def create_display_image3(detected_gesture, word_spelled):
 def create_display_image4(detected_gesture, word_spelled):
     global save_mode
     global saved_angles_mode
-    #global number 
     global charac
     global text_word
     global text_word1
@@ -288,42 +287,55 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
     global save_mode
     global saved_angles_mode
     global charac 
-    
-    SAVED_GESTURES_PATH = "/home/ysc/ros_ws/src/intera_sdk/intera_examples/scripts/captured_gestures_ros"
-    saved_landmarks = {}
-    gesture_labels = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "1","2","3","4","5","6","7","8","9" ,"finish", "backspace"]  
-
-    for label in gesture_labels:
-        json_path = os.path.join(SAVED_GESTURES_PATH, f"{label}_asl_landmarks_ros.json")
-        if os.path.exists(json_path):
-            with open(json_path, 'r') as f:
-                saved_landmarks[label] = normalize_landmarks(json.load(f))
+  
+  
     #Intializes rospy nodes for running
-    rospy.init_node("sawyer_gesture_recognition", anonymous=True)
+    rospy.init_node("sawyer_gesture_recognition", anonymous=True) 
+    
+    
+    #Defining the saved gestures path
+    SAVED_GESTURES_PATH = "/home/ysc/ros_ws/src/intera_sdk/intera_examples/scripts/captured_gestures_ros"
+    #Intializing saved landmarks
+    saved_landmarks = {}
+    #Defining gesture labels
+    gesture_labels1 = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "1","2","3","4","5","6","7","8","9" ,"finish", "backspace"]  
 
-   
+    #For every label in gesture labels
+    for label in gesture_labels1:
+        json_path = os.path.join(SAVED_GESTURES_PATH, f"{label}_asl_landmarks_ros.json")
+        #Checks if the file exists
+        if os.path.exists(json_path):
+            #Opens and the file for reading
+            with open(json_path, 'r') as f:
+                #Defines saved_landmarks with each label being equal to the normalized coordinates of the file that was just opened
+                saved_landmarks[label] = normalize_landmarks(json.load(f))
+                
+    #Defines cameras as sawyers Camera class
     cameras = intera_interface.Cameras()
     camera_name = "head_camera"
 
+    #Verifies camera exists otherwise will throw an error
     if not cameras.verify_camera_exists(camera_name):
         rospy.logerr(f"Error: Camera '{camera_name}' not detected. Exiting.")
         return
 
     rospy.loginfo(f"Starting stream from {camera_name}...")
+    #Opens head camera
     cameras.start_streaming(camera_name)
 
-   
+    #Camera settings
     cameras.set_gain(camera_name, -1)
     cameras.set_exposure(camera_name, -1)
 
-  
+    #Callback function used to show the camera image
     cameras.set_callback(camera_name, camera_callback, rectify_image=True, callback_args=(camera_name,))
  
+    
+    #Variable initialization
     delta = 0
-    increment = 0 #
-    change_increment = False#
+    gripper = True
     joint_control_mode = False
-    joint = None #
+    joint = None 
     gesture_start_time = None
     detected_gesture = None
     confirmed_gesture = None
@@ -419,6 +431,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                     change_increment = False
                                     save_mode = False
                                     saved_angles_mode = False
+                                    gripper = True
                                     sword = ''.join(word_spelled)
 
                                     """
@@ -475,10 +488,10 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                       
                                         
                                     #Grip
-                                    if charac == 'G':
+                                    if charac == 'G' and gripper == True:
                                         grip(close=True)
                                     #Ungrip
-                                    elif charac == 'V':
+                                    elif charac == 'U' and gripper == True:
                                         grip(close=False)
                                     
  
@@ -503,22 +516,37 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                             increment = 0.5
                                             sleep = 0.05
                                             print("Increment Changed to Fast")
+                                            change_increment = False
                                           
                                         elif confirmed_gesture == "W" and change_increment == True:
                                             increment = 0.01
-                                            print("Increment Changed to Slow")
                                             sleep = 0.00001
+                                            print("Increment Changed to Slow")
+                                            change_increment = False
+
                                             
                                         elif change_increment == True:
                                             if confirmed_gesture == "I":
                                                 delta = increment 
                                             elif confirmed_gesture == "D":
                                                 delta = -1*increment
-                                            current_position = limb.joint_angle(joint)
-                                            new_position = current_position + delta
-                                            limb.set_joint_position_speed(speed = 0.3)
-                                            limb.move_to_joint_positions({joint: new_position}, test=True)                                  
-                                            print(f"{confirmed_gesture} {joint} to {new_position}")
+                                                
+                                            try:
+                                                if joint != None:
+                                                    current_position = limb.joint_angle(joint)
+                                                    new_position = current_position + delta
+                                                    limb.set_joint_position_speed(speed = 0.3)
+                                                    limb.move_to_joint_positions({joint: new_position}, test=True)                             
+                                                    print(f"{confirmed_gesture} {joint} to {new_position}")     
+                                                
+                                                elif change_increment == False and joint != None:
+                                                    rospy.logwarn("Change increment is false. Cannot change increment.")
+                                                    
+                                                elif joint == None:
+                                                    rospy.logwarn("No joint selected. Cannot move.")
+                                                    
+                                            except Exception as e:
+                                                    rospy.logerr(f"Joint control error: {e}")
                                             time.sleep(sleep)          
 
                                         else:
@@ -526,15 +554,28 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                                 delta = 0.25 
                                             elif confirmed_gesture == "D":
                                                 delta = -0.25
-                                            current_position = limb.joint_angle(joint)
-                                            new_position = current_position + delta
-                                            limb.set_joint_position_speed(speed = 0.1)
-                                            limb.move_to_joint_positions({joint: new_position}, test=True)
+                                                
+                                            try:
+                                                if joint != None:
+                                                    current_position = limb.joint_angle(joint)
+                                                    new_position = current_position + delta
+                                                    limb.set_joint_position_speed(speed = 0.1)
+                                                    limb.move_to_joint_positions({joint: new_position}, test=True)
+                                                    print(f"{confirmed_gesture} {joint} to {new_position}")
+                                                    
+                                                elif change_increment == False and joint != None:
+                                                    rospy.logwarn("Change increment is false. Cannot change increment.")
+                                                    
+                                                elif joint == None:
+                                                    rospy.logwarn("No joint selected. Cannot Move.")
+                                                    
+                                            except Exception as e:
+                                                rospy.logerr(f"Joint control error: {e}")
                                             #newlb = limb.joint_angle('right_j0')
                                             #head_pan(newlb)
-                                            print(f"{confirmed_gesture} {joint} to {new_position}")
+                                            
                                             time.sleep(0.01)
-                                             
+                                            
                                             #from zero pos
                                             #j0 increase ccw
                                             #j1 decrease is up
@@ -573,8 +614,38 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                         number = charac
                                         with open(f"saved_joint_angles_{number}", "r") as f:
                                             x = json.load(f)
-                                            print(f'Moving to saved angles {number}')  
+                                            print(f'Moved to saved angles {number}')  
                                         limb.move_to_joint_positions(x,threshold=0.008726646,test=None)
+                                     
+                                    elif charac == 'Y':
+                                         traj_mode = True
+                                         pos_mode = False
+                                         gripper = False
+                                         word_spelled = []
+                                         print('Entering Trajectory Mode: Select Saved Files')
+                                         
+                                         
+                                    elif charac == 'H' and traj_mode == True:
+                                         sword = ''.join(word_spelled)
+                                         print('Moving to selected saved files')
+                                         for letter in sword:
+                                             try:
+                                                 if letter == 'G':
+                                                     grip(close=True)
+                                                     print('grip')
+                                                 elif letter == 'U':
+                                                     grip(close=False)
+                                                     print('ungrip')
+                                                 else:  
+                                                     with open(f"saved_joint_angles_{letter}", "r") as f:
+                                                         x = json.load(f)
+                                                         limb.move_to_joint_positions(x, threshold=0.008726646, test=None)
+                                             except Exception as e:
+                                                  print("Error: Letter not in directory")
+                                                
+
+                                            
+                                         
 
  
                         #Resets the loop
@@ -607,14 +678,20 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
         
         #Displays image to sawyer head screen
         
-        if joint_control_mode == True and change_increment == False and save_mode == False and saved_angles_mode == False or change_increment == True and increment != 0 and save_mode == False and saved_angles_mode == False:
+        
+        '''
+        Will stay in joint control mode if:
+        1. joint control mode is true and change increment, save mode, and saved angles mode is false
+        2. change increment is true, the increment does not equal 0 and save mode and saved angles mode is false.
+        '''
+        #increment will equals small and i cant change increment
+        if joint_control_mode == True and change_increment == False and save_mode == False and saved_angles_mode == False: #or change_increment == True  and increment != 0 and save_mode == False and saved_angles_mode == False:
             display_img = create_display_image2(detected_gesture, word_spelled)
             temp_image_path = "/tmp/sawyer_display.png"
             cv2.imwrite(temp_image_path, display_img)
             head_display.display_image(temp_image_path, display_in_loop=False, display_rate=10.0) 
-            
 
-        elif change_increment == True and increment == 0:
+        elif change_increment == True: #and increment == 0:
             display_img = create_display_image3(detected_gesture, word_spelled)
             temp_image_path = "/tmp/sawyer_display.png"
             cv2.imwrite(temp_image_path, display_img)  
