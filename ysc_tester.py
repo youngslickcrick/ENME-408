@@ -658,7 +658,8 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                         #Executes read file
                                         limb.move_to_joint_positions(x,threshold=0.008726646,test=None)
 
-                                    #If
+                                    #If 'Y' is signed Trajectory Mode is turned on
+                                    #Select the files a by signing the numbers 1-9, use G and U for closing and opening the gripper
                                     elif charac == 'Y':
                                          traj_mode = True
                                          pos_mode = False
@@ -666,10 +667,14 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                          word_spelled = []
                                          print('Entering Trajectory Mode: Select Saved Files')
                                          
-                                         
+
+                                    #If 'H' is signed and Trajectory Mode is on saved files will be executed in succession
                                     elif charac == 'H' and traj_mode == True:
+                                         #defines the string of combined letters
                                          sword = ''.join(word_spelled)
                                          print('Moving to selected saved files')
+                                         
+                                         #for every letter in the string the arm will move to those points
                                          for letter in sword:
                                              try:
                                                  if letter == 'G':
