@@ -2,9 +2,23 @@
 # Chris Iheanacho @ UMBC
 # Description: Compares live hand gestures using Sawyer's head camera against saved gestures
 # and combines them into a word.
-# ysc_mediapipe_asl_ros2.py
+# ysc_tester.py
 
 
+# Section 1: Libary
+# ------------------------------------------------------------------------------------------
+
+# rospy: Python client library for ROS that enables programmers to communicate with ROS topics, services, and parameters. In other words it uses the ROS python API for communication with Sawyer.
+# cv2(openCV): Imports the openCV library which provides functions for and classes for image Image processing and computer vision. It’s essential in opening up sawyer’s cameras.
+# os(operating systems): This allows for file manipulation and management, this is needed when saving images and javascript object notation (json) files to a specific directory.
+# json(Javascript object notation): Used to store and transfer data, in this code it’s used to save the coordinates of the hand landmarks in JSON format.
+# time: Is used for handling time based operations it’s used when measuring how long a gesture has been held.
+# numpy: Is used to call mathematical equations in multiple functions
+# mediapipe: This is used for the hand tracking.
+# intera_interface: The python API for communicating with Intera-enabled robots
+# deque: Is used for storing past frames, helps improve the accuracy of the gestures being by comparing the last few frames and making sure most of them detect the last gesture.
+# Cvbridge: The bridge between ROS image messages and openCV image representation
+# CvBridgeError: Used for handling errors in openCV
 import rospy
 import cv2
 import os
@@ -16,21 +30,13 @@ import intera_interface
 from collections import deque
 from cv_bridge import CvBridge, CvBridgeError
 
-"""
-rospy: Python client library for ROS that enables programmers to communicate with ROS topics, services, and parameters. In other words it uses the ROS python API for communication with Sawyer.
-cv2(openCV): Imports the openCV library which provides functions for and classes for image Image processing and computer vision. It’s essential in opening up sawyer’s cameras.
-os (operating systems): This allows for file manipulation and management, this is needed when saving images and javascript object notation (json) files to a specific directory.
-json(Javascript object notation): Used to store and transfer data, in this code it’s used to save the coordinates of the hand landmarks in JSON format.
-mediapipe: This is used for the hand tracking.
-intera_interface: The python API for communicating with Intera-enabled robots
-cv_bridge: The bridge between ROS image messages and openCV image representation
-time: Is used for handling time based operations it’s used when measuring how long a gesture has been held.
-numpy: Is used to call mathematical equations in multiple functions
-deque: Is used for storing past frames, helps improve the accuracy of the gestures being by comparing the last few frames and making sure most of them detect the last gesture.
-"""
 
 
-#Global Variables (variables that can be accessed in and out of a function)
+
+# Section 2: Global Variables and Mediapipe intialization
+# ---------------------------------------------------------------------------------------------
+
+# Variables that can be accessed in and out of a function
 bridge = CvBridge()
 latest_frame = None
 currentlb = 0
@@ -46,6 +52,7 @@ text_word = None
 text_word1 = None
 text_word2 = None
 save_word = None
+traj_mode = False
 
 #FROM MEDIAPIPE TEMPLATE: Mediapipe settings, decides the accuracy and mode of the landmarks
 mp_hands = mp.solutions.hands
@@ -55,6 +62,12 @@ hands = mp_hands.Hands(static_image_mode=False,
                        min_tracking_confidence=0.5)
 mp_drawing = mp.solutions.drawing_utils
 
+
+
+
+# Section 3: Basic Functions
+# ---------------------------------------------------------------------------------------------
+# Functions that will be accessed in and outside of the main function compare_gestures_live()
 
 #Opens and closes the sawyer gripper
 def grip(close=False):
@@ -67,27 +80,25 @@ def grip(close=False):
         gripper.open()
         
         
-#FROM RETHINKROBOTICS TEMPLATE:Processes images from Sawyer's head camera
+#FROM RETHINKROBOTICS TEMPLATE: Processes images from Sawyer's head camera
 def camera_callback(img_data, camera_name):
-    
     #Using 'global' to call this variable
     global latest_frame
-    
+  
     #Try allows one to test code for errors
     try:
         #Converting ros images messages to cv2 for processing
         frame = bridge.imgmsg_to_cv2(img_data, "bgr8")
-        
         #Mediapipe requries a flipped frame
         latest_frame = cv2.flip(frame, 1)
-    
+      
     #Except handles the error
     except CvBridgeError as e:
         rospy.logerr(f"CV Bridge Error: {e}")
 
+
 #Normalizes landmarks to the wrist landmark
 def normalize_landmarks(landmarks): 
-    
     #The first landmark located at the wrist
     wrist = landmarks[0]  
     #Creates an empty list to intialize 
@@ -118,24 +129,24 @@ def weighted_distance(saved, detected):
         (weight_z * (saved['z'] - detected['z']))**2)
 
 
-#Displays screen for posistion mode
+# Create images for posistion mode
 def create_display_image1(detected_gesture, word_spelled):
 
     #1024x600 pixels
     width, height = 1024, 600  
     
-    '''
+    
     #np.full(dimensions, color, dtype), the alternative would be np.zeroes(dimensions, dtype)
     #Used to create blank images where text can be added
     #(0,0,0) = black, (255,255,255) = white
     #dtype is the range in which the pixels will be defined, uint8 defines the range as 0-255 which is standard for images
-    '''
+    
     image = np.full((height, width, 3), (255, 255, 255), dtype=np.uint8) 
 
 
     font = cv2.FONT_HERSHEY_SIMPLEX
-    font_scale = 3
-    thickness = 5
+    font_scale = 2
+    thickness = 4
     color = (0, 0, 0)  
 
     #shortened if else statement
@@ -151,8 +162,8 @@ def create_display_image1(detected_gesture, word_spelled):
     return image
     
     
-#Displays screen for joint control mode
-def create_display_image2(detected_gesture, word_spelled):
+# Create images for joint control mode
+def create_display_image2(detected_gesture):
     global incr
     global joint
     width, height = 1024, 600  
@@ -169,9 +180,9 @@ def create_display_image2(detected_gesture, word_spelled):
 
 
     text_word = f"Controlling joint: {joint}"
-    cv2.putText(image, text_word, (50, 400), font, font_scale, color, thickness)
+    cv2.putText(image, text_word, (50, 400), font, font_scale, (255, 0, 0), thickness)
     
-    #Displays the increment depending on the setting selected
+    # Displays the increment depending on the setting selected
     if increment == 0.5:
         incr = "Large"
     elif increment == 0.01:
@@ -180,13 +191,13 @@ def create_display_image2(detected_gesture, word_spelled):
         incr = "Default"
         
     text_word = f"Increment: {incr}"
-    cv2.putText(image, text_word, (50, 500), font, 1, color, 2)        
+    cv2.putText(image, text_word, (50, 500), font, 1, (255, 0, 0), 2)        
         
         
     return image
     
-#Displays screen for changing the increment
-def create_display_image3(detected_gesture, word_spelled):
+# Create images for changing the increment
+def create_display_image3(detected_gesture):
     global incr
     global increment
     
@@ -202,12 +213,12 @@ def create_display_image3(detected_gesture, word_spelled):
     cv2.putText(image, text_detected, (50, 200), font, font_scale, color, thickness)
 
     text_word = f"Change Increment"
-    cv2.putText(image, text_word, (50, 400), font, font_scale, color, thickness)
+    cv2.putText(image, text_word, (50, 400), font, font_scale, (255, 0, 0), thickness)
     
     return image    
 
-#Displays screen for save mode or saved angles mode
-def create_display_image4(detected_gesture, word_spelled):
+# Create images for save mode or saved angles mode
+def create_display_image4(detected_gesture):
     global save_mode
     global saved_angles_mode
     global charac
@@ -230,6 +241,7 @@ def create_display_image4(detected_gesture, word_spelled):
 
     if save_mode == True:
         save_word = f"Save mode, select save file"
+        colour = (0, 255, 0)
         saved_angles_mode = False
         if charac in ['1','2','3','4','5','6','7','8','9']:
             number = charac
@@ -241,7 +253,8 @@ def create_display_image4(detected_gesture, word_spelled):
        
         
     elif saved_angles_mode == True:
-        save_word = f"Saved angles mode, select saved file"
+        save_word = f"Saved Angles Execution Mode, select saved file"
+        colour = (0, 0, 255)
         save_mode = False
         if charac in ['1','2','3','4','5','6','7','8','9']:
             number = charac
@@ -251,15 +264,38 @@ def create_display_image4(detected_gesture, word_spelled):
             text_word1 = "Waiting for a number gesture..."
             text_word2 = ""
             
-    
-    cv2.putText(image, save_word, (50, 110), font, 1, color, 2)
+    cv2.putText(image, save_word, (50, 110), font, 1, colour, 2)
     cv2.putText(image, text_word1, (50, 400), font, font_scale, color, thickness)
     cv2.putText(image, text_word2, (50, 450), font, font_scale, color, thickness)    
     
     return image    
 
 
-#Normalizes the head pan to joint0 axis
+# Create images for trajectory mode
+def create_display_image5(detected_gesture, word_spelled):
+
+    width, height = 1024, 600  
+    image = np.full((height, width, 3), (255, 255, 255), dtype=np.uint8) 
+
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    font_scale = 2
+    thickness = 4
+    color = (0, 0, 0)  
+
+    text_detected = f"Detected: {detected_gesture}" if detected_gesture else "Detected: None"
+    cv2.putText(image, text_detected, (50, 200), font, font_scale, color, thickness)
+    
+    text_word = f"Word: {''.join(word_spelled)}"
+    cv2.putText(image, text_word, (50, 400), font, font_scale, color, thickness)
+
+    traj_word = "Trajectory Mode: Select saved files and sign 'H' to execute"
+    cv2.putText(image, traj_word, (50, 100), font, 1, (0, 175, 255), 2)
+   
+    return image
+
+
+#EXPERIMENTAL CODE
+# Normalizes the head pan to joint0 axis
 """
 def head_pan(newlb):
     global currentlb
@@ -276,8 +312,18 @@ def head_pan(newlb):
 """
     
 
+# Section 4: Main Function
+# ---------------------------------------------------------------------------------------------
+# Compares the saved coordinates of landmarks to the new ones detected by the camera
 
-#Compares the saved coordinates of landmarks to the new ones detected by the camera
+# MODES
+#---------------------------
+# POSITION MODE: Move to joint angles that are saved directly in the code (Black)
+# JOINT CONTROL MODE: Individually control each joint by increasing or decreasing its joint angle by a set increment, (Increment can be changed with change increment mode) (Blue)
+# SAVE MODE: Save the current joint angles of the robot in 1 of 9 files (Green)
+# SAVED ANGLES EXECUTION MODE: Execute the saved joint angles individually (Red)
+# TRAJECTORY MODE: Execute the saved joint angles in succession creating a path for the robot (Orange)
+
 def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
     global increment
     global joint
@@ -289,49 +335,48 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
     global charac 
   
   
-    #Intializes rospy nodes for running
+    # Initializes a ROS node for running
     rospy.init_node("sawyer_gesture_recognition", anonymous=True) 
     
-    
-    #Defining the saved gestures path
+    # Define the path where the saved gesture landmark files are stored
     SAVED_GESTURES_PATH = "/home/ysc/ros_ws/src/intera_sdk/intera_examples/scripts/captured_gestures_ros"
-    #Intializing saved landmarks
+    # Initialize a dictionary to store the loaded and normalized landmarks
     saved_landmarks = {}
-    #Defining gesture labels
+    # Defining which gesture labels will be utilized
     gesture_labels1 = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "1","2","3","4","5","6","7","8","9" ,"finish", "backspace"]  
 
-    #For every label in gesture labels
+    # For every label in gesture labels
     for label in gesture_labels1:
         json_path = os.path.join(SAVED_GESTURES_PATH, f"{label}_asl_landmarks_ros.json")
-        #Checks if the file exists
+        # Checks if the file exists
         if os.path.exists(json_path):
-            #Opens and the file for reading
+            # Opens and the file for reading
             with open(json_path, 'r') as f:
-                #Defines saved_landmarks with each label being equal to the normalized coordinates of the file that was just opened
+                # Normalize the loaded landmark data and store it in the saved_landmarks dictionary using the label as the key
                 saved_landmarks[label] = normalize_landmarks(json.load(f))
                 
-    #Defines cameras as sawyers Camera class
+    # Defines cameras as sawyers Camera class
     cameras = intera_interface.Cameras()
     camera_name = "head_camera"
 
-    #Verifies camera exists otherwise will throw an error
+    # Verifies camera exists otherwise will throw an error
     if not cameras.verify_camera_exists(camera_name):
         rospy.logerr(f"Error: Camera '{camera_name}' not detected. Exiting.")
         return
 
     rospy.loginfo(f"Starting stream from {camera_name}...")
-    #Opens head camera
+    # Opens head camera
     cameras.start_streaming(camera_name)
 
-    #Camera settings
+    # Camera settings
     cameras.set_gain(camera_name, -1)
     cameras.set_exposure(camera_name, -1)
 
-    #Callback function used to show the camera image
+    # Callback function used to show the camera image
     cameras.set_callback(camera_name, camera_callback, rectify_image=True, callback_args=(camera_name,))
  
     
-    #Variable initialization
+    # Variable initialization
     delta = 0
     gripper = True
     joint_control_mode = False
@@ -341,12 +386,14 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
     confirmed_gesture = None
     head_display = intera_interface.HeadDisplay()
     limb = intera_interface.Limb()
+    limb.__init__(limb ='right', synchronous_pub=False)
     currentlb = limb.joint_angle('right_j0')
+    # Sets recent_detections to have a length 5 max
     recent_detections = deque(maxlen=history_frames)  
     word_spelled = []
-    
+    traj_mode = False
         
-    #Joint angles for different positions
+    # Joint angles for different positions
     C1 = {'right_j0': 0.1262578125, 'right_j1': 0.422787109375, 'right_j2': 0.2639326171875, 'right_j3': -0.4753544921875, 'right_j4': 2.9767138671875, 'right_j5': -1.6180185546875, 'right_j6': -0.989341796875}
     
     O = {'right_j0': 0.0, 'right_j1': 0.0, 'right_j2': 0.0, 'right_j3': -0.0, 'right_j4': 0.0, 'right_j5': 0.0, 'right_j6': -0.0}
@@ -355,20 +402,20 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
 
 
 
-    #Keeps the function looping as long ROS is active
+    # Keeps the function looping as long ROS is active
     while not rospy.is_shutdown():
         if latest_frame is None:
             continue
 
         frame = latest_frame.copy()
 
-        #FROM MEDIAPIPE TEMPLATE: Used to convert frame to RGB which mediapipe runs in
+        # FROM MEDIAPIPE TEMPLATE: Used to convert frame to RGB which mediapipe runs in
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         results = hands.process(rgb_frame)
 
         gesture_matched = False  
 
-        #Creates a green box on the camera feed screen
+        # Creates a green box on the camera feed screen
         height, width = frame.shape[:2]
         box_size = int(height * 0.2)
         top_left = (width // 2 - box_size // 2, int(height * 0.25))  
@@ -378,47 +425,51 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
         #FROM MEDIAPIPE TEMPLATE: Draws the landmarks on the hand
         if results.multi_hand_landmarks:
             for hand_landmarks in results.multi_hand_landmarks:
-              
                 mp_drawing.draw_landmarks(
                     frame, hand_landmarks, mp_hands.HAND_CONNECTIONS,
                     mp_drawing.DrawingSpec(color=(0, 255, 0), thickness=2, circle_radius=4),
                     mp_drawing.DrawingSpec(color=(255, 0, 0), thickness=2))
 
-                #Saves detected landmarks as a dictonary and normalizes them
+                # Converts detected landmarks to a list of dictionaries (with x, y, z coordinates) and normalizes them
                 detected_landmarks = [{'x': lm.x, 'y': lm.y, 'z': lm.z} for lm in hand_landmarks.landmark]
                 detected_landmarks = normalize_landmarks(detected_landmarks)   
                  
                  
-                #Loops through letters till it finds a match that meets threshold
+                # Loops through letters till it finds a match that meets threshold
+                # Sets the match to true for initialization
                 for label, landmarks in saved_landmarks.items():
                     match = True
+                    # Zips the saved and detected landmarks then compares the weighted distance to the threshold
                     for saved, detected in zip(landmarks, detected_landmarks):
                         if weighted_distance(saved, detected) > threshold: 
                             match = False
                             break
                     
-                    #Adds latest detected letter to recent_dectections
+                    # Adds latest detected letter to recent_dectections
                     if match:
                         gesture_matched = True  
                         recent_detections.append(label)  
                         
-                        #Determines which dectections shows up the most frequently in recent_detections
-                        most_common = max(set(recent_detections), key=recent_detections.count) 
+                        # Determines which dectections shows up the most frequently in recent_detections
+                        # Sets most_common equal to the label that shows up the most frequently in recent_dections
+                        most_common = max(set(recent_detections), key=recent_detections.count)
+                        # If most_common appears 60% which is 3/5 detections, detected_gesture is set to most_common 
                         if recent_detections.count(most_common) >= history_frames * 0.6:  
                             detected_gesture = most_common
                         else:
                             detected_gesture = None
                            
-                        #Starts hold time for hand gesture   
+                        #If detected_gesture exists and eqauls a label the hold time starts
                         if detected_gesture and detected_gesture == label:
                             if gesture_start_time is None:
                                 gesture_start_time = time.time()
+                            # If the hold_time is met, the gesture is confirmed
                             elif time.time() - gesture_start_time >= hold_time:
                                 confirmed_gesture = label  
                                 print(f"Gesture confirmed: {label}")
                                 gesture_start_time = None  
                                 
-                                #Confirms spelled word                        
+                                #Confirms spelled word and resets various modes                       
                                 if label == "finish":
                                     print(f"Word Confirmed: {''.join(word_spelled)}")
                                     hold_time = 1
@@ -432,35 +483,28 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                     save_mode = False
                                     saved_angles_mode = False
                                     gripper = True
+                                    traj_mode = False
                                     sword = ''.join(word_spelled)
 
-                                    """
-                                    if sword == 'B':
-                                        limb.move_to_joint_positions(C1)
-                                    elif sword == 'A':
-                                        limb.move_to_joint_positions(C3)
-                                        #Zero
-                                    elif sword == 'Q':
-                                        limb.move_to_joint_positions(O)
-                                        
-                                        #Grip
-                                    elif sword == 'Grip':
-                                        grip(close=True)
-                                        #Ungrip
-                                    elif sword == 'Ungrip':
-                                        grip(close=False) 
-                                    """   
 
-                                   
-                                    #After word is confirmed, new the list is emptied  
+                                    if sword == 'WV':
+                                        limb.move_to_joint_positions({"right_j0": -3.015984375, "right_j1": -1.2903583984375, "right_j2": -3.042607421875, "right_j3": 0.05406640625, "right_j4": 2.5971845703125, "right_j5": 0.3070927734375, "right_j6": -2.89143359375})
+                                        rospy.sleep(1)
+                                        limb.move_to_joint_positions({"right_j0": -2.7919013671875, "right_j1": -1.892212890625, "right_j2": -3.042751953125, "right_j3": 0.23948828125, "right_j4": 2.9765078125, "right_j5": 0.3070927734375, "right_j6": -2.8912275390625})
+                                        rospy.sleep(1)
+                                        limb.move_to_joint_positions({"right_j0": -3.015984375, "right_j1": -1.2903583984375, "right_j2": -3.042607421875, "right_j3": 0.05406640625, "right_j4": 2.5971845703125, "right_j5": 0.3070927734375, "right_j6": -2.89143359375})
+                                        rospy.sleep(1)
+                                        limb.move_to_joint_positions({"right_j0": -2.7919013671875, "right_j1": -1.892212890625, "right_j2": -3.042751953125, "right_j3": 0.23948828125, "right_j4": 2.9765078125, "right_j5": 0.3070927734375, "right_j6": -2.8912275390625})
+
+                                    #After word is confirmed, the list is emptied  
                                     word_spelled = []
 
 
-                                #Deletes last letter  
+                                #Deletes last letter and resets joint, change_increment, and increment
                                 elif label == "backspace":
                                     joint = None
                                     change_increment = False
-                                    increment = 0
+                                    #increment = 0
                                     if word_spelled:
                                         word_spelled.pop()  
                                         #print(f"Word after backspace: {''.join(word_spelled)}")
@@ -472,84 +516,98 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                     #print(f"Current word: {''.join(word_spelled)}")
                                    
                                     charac = confirmed_gesture
-                                    
+                                  
+                                    #If 'A' is signed, arm moves to C3
                                     if charac == 'A' and pos_mode == True:
                                         limb.set_joint_position_speed(speed = 0.2)
-                                        limb.move_to_joint_positions(C3)
-
+                                        limb.move_to_joint_positions(C3)                                      
+                                    #If 'B' is signed arm moves to the zero position
                                     elif charac == 'B' and pos_mode == True:
                                         limb.set_joint_position_speed(speed = 0.2)
                                         limb.move_to_joint_positions(O)
-
-                                    #Zero
+                                    #If 'C' is signed, arm moves to C1
                                     elif charac == 'C' and pos_mode == True:
                                         limb.set_joint_position_speed(speed = 0.2)
                                         limb.move_to_joint_positions(C1)
                                       
                                         
-                                    #Grip
+                                    #If 'G' is signed the gripper will close
                                     if charac == 'G' and gripper == True:
                                         grip(close=True)
-                                    #Ungrip
+                                    #If 'U' is signed the gripper will open
                                     elif charac == 'U' and gripper == True:
                                         grip(close=False)
                                     
- 
+                                    #If 'L' is signed Joint Control Mode will turn on
                                     elif charac == 'L':
                                         print("Joint control mode: Select joint number")
                                         pos_mode = False
                                         joint_control_mode = True
-                                        hold_time = 0.0
-                                        gesture_start_time = time.time()
-                                                   
+
+                                    #If Joint Control Mode is on and a joint has been selected 'I' or 'D' can be used to increase or decrease the joint angle respectively
+                                    #A joint can be slected by signing a number 0-6
                                     elif joint_control_mode and joint is None and charac in ['O', '1', '2', '3', '4', '5', '6']:
                                         number = '0' if charac == 'O' else charac
                                         joint = f'right_j{number}'
                                         print(f"Controlling joint: {joint}")
                                         print(" Use 'I' to increase, 'D' to decrease, 'finish' to exit.")
-                                    elif joint_control_mode and confirmed_gesture in ["I", "D", "P","F","M","W"]:
+                                        hold_time = 0.0
+                                        
+                                    #If Joint Control Mode is on, the increment at which the joint angle can be altered can be edited if 'P' is signed
+                                    elif joint_control_mode and confirmed_gesture in ["P", "F", "W","I","D"]:
                                         if confirmed_gesture == "P":
                                             print("CHANGE INCREMENT")
                                             change_increment = True
-                                            
+
+                                        #If 'F' is signed while change increment is on the increment will be changed to large
                                         elif confirmed_gesture == "F" and change_increment == True:
                                             increment = 0.5
                                             sleep = 0.05
-                                            print("Increment Changed to Fast")
+                                            print("Increment Changed to Large")
                                             change_increment = False
-                                          
+                                        #If 'W' is signed while change increment is on the increment will be changed to small
                                         elif confirmed_gesture == "W" and change_increment == True:
                                             increment = 0.01
                                             sleep = 0.00001
-                                            print("Increment Changed to Slow")
+                                            print("Increment Changed to Small")
                                             change_increment = False
 
-                                            
-                                        elif change_increment == True:
+                                        #If change increment is true the incremental value at which the joint angles move will be changed from default
+                                        elif increment == 0.5 and confirmed_gesture in ["I", "D"] or increment == 0.01 and confirmed_gesture in ["I", "D"]:
                                             if confirmed_gesture == "I":
                                                 delta = increment 
                                             elif confirmed_gesture == "D":
                                                 delta = -1*increment
-                                                
+
+                                            #Try block used for catching errors
                                             try:
                                                 if joint != None:
+                                                    #PARTIALLY FROM RETHINKROBOTICS TEMPLATE
+                                                    #Current position of chosen joint
                                                     current_position = limb.joint_angle(joint)
+                                                    #Defining the new position by adding the increment
                                                     new_position = current_position + delta
+                                                    #Setting the speed at which the joint will move
                                                     limb.set_joint_position_speed(speed = 0.3)
+                                                    #Moves to new joint angle
                                                     limb.move_to_joint_positions({joint: new_position}, test=True)                             
                                                     print(f"{confirmed_gesture} {joint} to {new_position}")     
                                                 
                                                 elif change_increment == False and joint != None:
+                                                    #Error sent to the terminal if constraints are not met
                                                     rospy.logwarn("Change increment is false. Cannot change increment.")
                                                     
                                                 elif joint == None:
+                                                    #Error sent to the terminal if constraints are not met
                                                     rospy.logwarn("No joint selected. Cannot move.")
                                                     
                                             except Exception as e:
+                                                    #Error sent to the terminal if constraints are not met
                                                     rospy.logerr(f"Joint control error: {e}")
-                                            time.sleep(sleep)          
-
-                                        else:
+                                            time.sleep(sleep) 
+                                          
+                                        #The incremental value at which the joint angles move will be set to default
+                                        elif change_increment == False and confirmed_gesture in ["I","D"]:
                                             if confirmed_gesture == "I":
                                                 delta = 0.25 
                                             elif confirmed_gesture == "D":
@@ -571,20 +629,13 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                                     
                                             except Exception as e:
                                                 rospy.logerr(f"Joint control error: {e}")
+                                            time.sleep(0.01)
+
+                                            #EXPERIMENTAL CODE
                                             #newlb = limb.joint_angle('right_j0')
                                             #head_pan(newlb)
                                             
-                                            time.sleep(0.01)
-                                            
-                                            #from zero pos
-                                            #j0 increase ccw
-                                            #j1 decrease is up
-                                            #j2 .
-                                            #j3 decrease is up
-                                            #j4
-                                            #j5 decrease is up
-                                            #j6
-                                  
+                                    #If 'S' is signed Save Mode will turn on
                                     elif charac == 'S':
                                         save_mode = True
                                         pos_mode = False
@@ -594,13 +645,16 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                         hold_time = 1
                                         print('Entering Save Mode, select save file')
 
+                                    #If save mode is on select a number 1-9 to save the joint angles to that designated file
                                     elif save_mode and charac in ['1','2','3','4','5','6','7','8','9']:
                                         number = charac
                                         j_a = limb.joint_angles()
+                                        #Opens file based on number signed and writes the joint angles in json format to file
                                         with open(f"saved_joint_angles_{number}","w") as f:
                                             json.dump(j_a, f)
                                             print(f'Joint angles saved to file {number}')
-                                            
+
+                                    #If 'E' is signed Saved Angles Execution Mode will turn on
                                     elif charac == 'E':
                                         saved_angles_mode = True
                                         save_mode = False
@@ -609,37 +663,54 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                         change_increment == False
                                         hold_time = .8
                                         print('Entering Saved Angles Mode, select saved file')
-                                        
+
+                                    #If save angles mode is on select a number 1-9 to open the saved file and move the joint angles to
                                     elif saved_angles_mode and charac in ['1','2','3','4','5','6','7','8','9']:
                                         number = charac
+                                        #Opens file based on number signed and reads the joint angles
                                         with open(f"saved_joint_angles_{number}", "r") as f:
                                             x = json.load(f)
-                                            print(f'Moved to saved angles {number}')  
+                                            print(f'Moved to saved angles {number}')
+                                        #Executes read file
                                         limb.move_to_joint_positions(x,threshold=0.008726646,test=None)
-                                     
+
+                                    #If 'Y' is signed Trajectory Mode is turned on
+                                    #Select the files a by signing the numbers 1-9, use G and U for closing and opening the gripper
                                     elif charac == 'Y':
                                          traj_mode = True
                                          pos_mode = False
                                          gripper = False
+                                         joint_mode = False
+                                         hold_time = 1.0
                                          word_spelled = []
                                          print('Entering Trajectory Mode: Select Saved Files')
                                          
-                                         
+
+                                    #If 'H' is signed and Trajectory Mode is on saved files will be executed in succession
                                     elif charac == 'H' and traj_mode == True:
+                                         #Defines the string of combined letters
                                          sword = ''.join(word_spelled)
                                          print('Moving to selected saved files')
+                                         
+                                         #For every letter in the string the arm will move to those points
                                          for letter in sword:
                                              try:
                                                  if letter == 'G':
                                                      grip(close=True)
                                                      print('grip')
+                                                     rospy.sleep(1)
+                                                     
                                                  elif letter == 'U':
                                                      grip(close=False)
                                                      print('ungrip')
+                                                     rospy.sleep(1)
+                                                     
                                                  else:  
                                                      with open(f"saved_joint_angles_{letter}", "r") as f:
                                                          x = json.load(f)
                                                          limb.move_to_joint_positions(x, threshold=0.008726646, test=None)
+                                                         
+                                             #If a number, 'G', or 'U' is not signed, this error will be thrown
                                              except Exception as e:
                                                   print("Error: Letter not in directory")
                                                 
@@ -673,36 +744,42 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
             confirmed_gesture = None  
 
 
-        #Opens the camera feed
+        # Opens the camera feed
         cv2.imshow("Sawyer Head Camera - Gesture Recognition", frame)
-        
-        #Displays image to sawyer head screen
-        
-        
-        '''
-        Will stay in joint control mode if:
-        1. joint control mode is true and change increment, save mode, and saved angles mode is false
-        2. change increment is true, the increment does not equal 0 and save mode and saved angles mode is false.
-        '''
-        #increment will equals small and i cant change increment
-        if joint_control_mode == True and change_increment == False and save_mode == False and saved_angles_mode == False: #or change_increment == True  and increment != 0 and save_mode == False and saved_angles_mode == False:
-            display_img = create_display_image2(detected_gesture, word_spelled)
-            temp_image_path = "/tmp/sawyer_display.png"
-            cv2.imwrite(temp_image_path, display_img)
-            head_display.display_image(temp_image_path, display_in_loop=False, display_rate=10.0) 
 
-        elif change_increment == True: #and increment == 0:
-            display_img = create_display_image3(detected_gesture, word_spelled)
+        # Displays images for Joint Control Mode
+        if joint_control_mode == True and change_increment == False and save_mode == False and saved_angles_mode == False and traj_mode == False:
+            # Defines the image created by the function
+            display_img = create_display_image2(detected_gesture)
+            # Defines the path where the image will be saved (tmp is used to store files temporarily)
             temp_image_path = "/tmp/sawyer_display.png"
-            cv2.imwrite(temp_image_path, display_img)  
+            # Saves image to the path
+            cv2.imwrite(temp_image_path, display_img)
+            # Displays image to sawyer screen
             head_display.display_image(temp_image_path, display_in_loop=False, display_rate=10.0) 
-          
-        elif save_mode == True and pos_mode == False or saved_angles_mode == True and pos_mode == False:
-            display_img = create_display_image4(detected_gesture, word_spelled)
+        
+        # Displays images for Change Increment
+        elif change_increment == True: 
+            display_img = create_display_image3(detected_gesture)
             temp_image_path = "/tmp/sawyer_display.png"
             cv2.imwrite(temp_image_path, display_img)  
             head_display.display_image(temp_image_path, display_in_loop=False, display_rate=10.0)
           
+        # Displays images for Save Mode
+        elif save_mode == True and pos_mode == False or saved_angles_mode == True and pos_mode == False:
+            display_img = create_display_image4(detected_gesture)
+            temp_image_path = "/tmp/sawyer_display.png"
+            cv2.imwrite(temp_image_path, display_img)  
+            head_display.display_image(temp_image_path, display_in_loop=False, display_rate=10.0)
+
+        # Displays images for Trajectory Mode
+        elif traj_mode == True: 
+            display_img = create_display_image5(detected_gesture, word_spelled)
+            temp_image_path = "/tmp/sawyer_display.png"
+            cv2.imwrite(temp_image_path, display_img)  
+            head_display.display_image(temp_image_path, display_in_loop=False, display_rate=10.0)
+       
+        # Displays images for Position Mode
         else:
             display_img = create_display_image1(detected_gesture, word_spelled)
             temp_image_path = "/tmp/sawyer_display.png"
@@ -710,15 +787,18 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
             head_display.display_image(temp_image_path, display_in_loop=False, display_rate=10.0) 
               
         
-        #Closes script if '.' is pressed
+        # Closes script if '.' is pressed
         if cv2.waitKey(1) & 0xFF == 46:
+
+            #Displays the robot's default image
             image_path = '/home/ysc/Pictures/Default_Image.png'
             head_display = intera_interface.HeadDisplay()
             head_display.display_image(image_path, display_in_loop=False, display_rate=1.0)
             break
-            
+
+    # Closes all camera windows
     cv2.destroyAllWindows()
 
-#Used as guard for against other scripts allowing it to run properly if called
+# Used as guard for against other scripts allowing it to run properly if called
 if __name__ == "__main__":
     compare_gesture_live(threshold=0.064, hold_time=1.0, history_frames=5) 
