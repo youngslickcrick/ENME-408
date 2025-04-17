@@ -53,6 +53,7 @@ text_word1 = None
 text_word2 = None
 save_word = None
 traj_mode = False
+coolguy = False
 
 #FROM MEDIAPIPE TEMPLATE: Mediapipe settings, decides the accuracy and mode of the landmarks
 mp_hands = mp.solutions.hands
@@ -145,8 +146,10 @@ def create_display_image1(detected_gesture, word_spelled):
 
 
     font = cv2.FONT_HERSHEY_SIMPLEX
+    font2 = cv2.FONT_HERSHEY_PLAIN
     font_scale = 2
     thickness = 4
+    thickness2 = 2
     color = (0, 0, 0)  
 
     #shortened if else statement
@@ -157,6 +160,28 @@ def create_display_image1(detected_gesture, word_spelled):
     
     text_word = f"Word: {''.join(word_spelled)}"
     cv2.putText(image, text_word, (50, 400), font, font_scale, color, thickness)
+    
+    key1 = "'L' for Joint Mode"
+    key2 = "'P' to change increment"
+    key3 = "Increment size: 'W' or 'F'"
+    key4 = "'S' for Save Mode"
+    key5 = "'E' for Execution Mode"
+    key6 = "'T' for Trajectory Mode"
+    key7 = "'G' to close gripper"
+    key8 = "'U' to open gripper"
+    key9 = "'finish' to exit all modes"
+    key10 = "'backspace' to change joints"
+
+    cv2.putText(image, key1, (50, 50), font, 1, (255,0,0), 2)
+    cv2.putText(image, key2, (50, 85), font, 1, (255,0,0), 2)
+    cv2.putText(image, key3, (50, 120), font, 1, (255,0,0), 2)
+    cv2.putText(image, key4, (600, 50), font, 1, (0,255,0), 2)
+    cv2.putText(image, key5, (600, 85), font, 1, (0,0,255), 2)
+    cv2.putText(image, key6, (600, 120), font, 1, (0,175,255), 2)
+    cv2.putText(image, key7, (50, 465), font, 1, (0,0,0), 2)
+    cv2.putText(image, key8, (50, 500), font, 1, (0,0,0), 2)
+    cv2.putText(image, key9, (50, 535), font, 1, (0,0,0), 2)
+    cv2.putText(image, key10, (50, 570), font, 1, (0,0,0), 2)
     
     #Returns the image so that it can be displayed
     return image
@@ -318,7 +343,7 @@ def head_pan(newlb):
 
 # MODES
 #---------------------------
-# POSITION MODE: Move to joint angles that are saved directly in the code (Black)
+# DEFAULT MODE: Move to joint angles that are saved directly in the code (Black)
 # JOINT CONTROL MODE: Individually control each joint by increasing or decreasing its joint angle by a set increment, (Increment can be changed with change increment mode) (Blue)
 # SAVE MODE: Save the current joint angles of the robot in 1 of 9 files (Green)
 # SAVED ANGLES EXECUTION MODE: Execute the saved joint angles individually (Red)
@@ -333,7 +358,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
     global save_mode
     global saved_angles_mode
     global charac 
-  
+    global coolguy
   
     # Initializes a ROS node for running
     rospy.init_node("sawyer_gesture_recognition", anonymous=True) 
@@ -343,7 +368,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
     # Initialize a dictionary to store the loaded and normalized landmarks
     saved_landmarks = {}
     # Defining which gesture labels will be utilized
-    gesture_labels1 = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "1","2","3","4","5","6","7","8","9" ,"finish", "backspace"]  
+    gesture_labels1 = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "1","2","3","4","5","6","7","8","9" ,"finish", "backspace", "midfi"]  
 
     # For every label in gesture labels
     for label in gesture_labels1:
@@ -400,7 +425,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
 
     C3 = {'right_j0': 0.519818359375, 'right_j1': 0.24602734375, 'right_j2': 0.2218564453125, 'right_j3': -0.1082734375, 'right_j4': 2.9670185546875, 'right_j5': -1.3883837890625, 'right_j6': -0.93182421875}
 
-
+    mf = {"right_j0": 0.2555947265625, "right_j1": -1.5592841796875, "right_j2": -3.0424638671875, "right_j3": -0.052869140625, "right_j4": 2.9232890625, "right_j5": 0.00548046875, "right_j6": 0.4243916015625}
 
     # Keeps the function looping as long ROS is active
     while not rospy.is_shutdown():
@@ -485,9 +510,12 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                     saved_angles_mode = False
                                     gripper = True
                                     traj_mode = False
+                                    coolguy = False
                                     sword = ''.join(word_spelled)
 
 
+
+                                    
                                     if sword == 'WV':
                                         limb.move_to_joint_positions({"right_j0": -3.015984375, "right_j1": -1.2903583984375, "right_j2": -3.042607421875, "right_j3": 0.05406640625, "right_j4": 2.5971845703125, "right_j5": 0.3070927734375, "right_j6": -2.89143359375})
                                         rospy.sleep(1)
@@ -530,7 +558,11 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                     elif charac == 'C' and pos_mode == True:
                                         limb.set_joint_position_speed(speed = 0.2)
                                         limb.move_to_joint_positions(C1)
-                                      
+                                        
+                                    elif charac == 'midfi':
+                                        limb.set_joint_position_speed(speed = 0.2)
+                                        limb.move_to_joint_positions(mf)                                                                      
+                                        coolguy = True
                                         
                                     #If 'G' is signed the gripper will close
                                     if charac == 'G' and gripper == True:
@@ -780,6 +812,10 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
             cv2.imwrite(temp_image_path, display_img)  
             head_display.display_image(temp_image_path, display_in_loop=False, display_rate=10.0)
        
+        elif coolguy == True: 
+            image_path = "/home/ysc/Pictures/coolguy.jpeg"
+            head_display.display_image(image_path, display_in_loop=False, display_rate=10.0)
+       
         # Displays images for Position Mode
         else:
             display_img = create_display_image1(detected_gesture, word_spelled)
@@ -793,7 +829,6 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
 
             #Displays the robot's default image
             image_path = '/home/ysc/Pictures/Default_Image.png'
-            head_display = intera_interface.HeadDisplay()
             head_display.display_image(image_path, display_in_loop=False, display_rate=1.0)
             break
 
