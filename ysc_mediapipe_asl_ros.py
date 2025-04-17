@@ -2,16 +2,16 @@
 # Chris Iheanacho @ UMBC
 # Description: Compares live hand gestures using Sawyer's head camera against saved gestures
 # and combines them into a word.
-# ysc_tester.py
+# ysc_mediapipe_asl_ros2.py
 
 
 # Section 1: Libary
 # ------------------------------------------------------------------------------------------
 
 # rospy: Python client library for ROS that enables programmers to communicate with ROS topics, services, and parameters. In other words it uses the ROS python API for communication with Sawyer.
-# cv2(openCV): Imports the openCV library which provides functions for and classes for image Image processing and computer vision. It’s essential in opening up sawyer’s cameras.
+# cv2(openCV): Imports the openCV library which provides functions for and classes for image processing and computer vision.
 # os(operating systems): This allows for file manipulation and management, this is needed when saving images and javascript object notation (json) files to a specific directory.
-# json(Javascript object notation): Used to store and transfer data, in this code it’s used to save the coordinates of the hand landmarks in JSON format.
+# json(Javascript object notation): Used to store and transfer data.
 # time: Is used for handling time based operations it’s used when measuring how long a gesture has been held.
 # numpy: Is used to call mathematical equations in multiple functions
 # mediapipe: This is used for the hand tracking.
@@ -85,7 +85,7 @@ def camera_callback(img_data, camera_name):
     #Using 'global' to call this variable
     global latest_frame
   
-    #Try allows one to test code for errors
+    #Try block allows one to test code for errors
     try:
         #Converting ros images messages to cv2 for processing
         frame = bridge.imgmsg_to_cv2(img_data, "bgr8")
@@ -372,7 +372,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
     cameras.set_gain(camera_name, -1)
     cameras.set_exposure(camera_name, -1)
 
-    # Callback function used to show the camera image
+    # #FROM RETHINKROBOTICS TEMPLATE: Callback method used to show the camera image
     cameras.set_callback(camera_name, camera_callback, rectify_image=True, callback_args=(camera_name,))
  
     
@@ -406,7 +406,8 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
     while not rospy.is_shutdown():
         if latest_frame is None:
             continue
-
+        
+        #Continously updates the frame
         frame = latest_frame.copy()
 
         # FROM MEDIAPIPE TEMPLATE: Used to convert frame to RGB which mediapipe runs in
