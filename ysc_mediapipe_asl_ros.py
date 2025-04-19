@@ -574,6 +574,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                     #If 'L' is signed Joint Control Mode will turn on
                                     elif charac == 'L':
                                         print("Joint control mode: Select joint number")
+                                        save_mode = False
                                         pos_mode = False
                                         joint_control_mode = True
 
