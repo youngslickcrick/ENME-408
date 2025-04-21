@@ -2,7 +2,7 @@
 # Chris Iheanacho @ UMBC
 # Description: Compares live hand gestures using Sawyer's head camera against saved gestures
 # and combines them into a word.
-# ysc_mediapipe_asl_ros2.py
+# ysc_mediapipe_asl_ros3.py
 
 
 # Section 1: Libary
@@ -255,7 +255,7 @@ def create_display_image3(detected_gesture):
 
     cv2.putText(image, "Change Increment", (50, 400), font, font_scale, (255, 0, 0), thickness)
 
-    cv2.putText(image, "Sign 'F' for large or 'W' for small", (50, 470), font, 1, (255, 0, 0), 2)
+    cv2.putText(image, "Sign 'Q' for huge, 'F' for large or 'W' for small", (50, 470), font, 1, (255, 0, 0), 2)
     return image    
 
 # Create images for save mode or saved angles mode
@@ -414,7 +414,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
     saved_landmarks = {}
     # Defining which gesture labels will be utilized
     
-    all_labels = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "1","2","3","4","5","6","7","8","9" ,"finish", "backspace", "midfi"] 
+    all_labels = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "O", "P", "Q", "S", "T", "U", "W", "X", "Y" ,"finish", "backspace", "midfi"] 
     letter_labels = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y"]
     number_labels = ["1","2","3","4","5","6","7","8","9"]
     control_labels = ["finish", "backspace", "midfi", "G", "U"]
@@ -912,4 +912,4 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
 
 # Used as guard for against other scripts allowing it to run properly if called
 if __name__ == "__main__":
-    compare_gesture_live(threshold=0.064, hold_time=1.0, history_frames=5) 
+    compare_gesture_live(threshold=0.07, hold_time=1.0, history_frames=5) 
