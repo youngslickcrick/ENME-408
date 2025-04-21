@@ -54,6 +54,8 @@ text_word2 = None
 save_word = None
 traj_mode = False
 coolguy = False
+joint = False
+joint_word = None
 
 #FROM MEDIAPIPE TEMPLATE: Mediapipe settings, decides the accuracy and mode of the landmarks
 mp_hands = mp.solutions.hands
@@ -191,6 +193,8 @@ def create_display_image1(detected_gesture, word_spelled):
 def create_display_image2(detected_gesture):
     global incr
     global joint
+    global joint_word
+
     width, height = 1024, 600  
     image = np.full((height, width, 3), (255, 255, 255), dtype=np.uint8) 
 
@@ -215,9 +219,14 @@ def create_display_image2(detected_gesture):
     else:
         incr = "Default"
         
+    if joint == None:
+        joint_word = "Select joint number"
+    else:
+        joint_word = "'P' to change increment"
+        
     text_word = f"Increment: {incr}"
     cv2.putText(image, text_word, (50, 500), font, 1, (255, 0, 0), 2)        
-        
+    cv2.putText(image, joint_word, (50, 110), font, 1, (255, 0, 0), 2)
         
     return image
     
@@ -237,9 +246,10 @@ def create_display_image3(detected_gesture):
     text_detected = f"Detected: {detected_gesture}" if detected_gesture else "Detected: None"
     cv2.putText(image, text_detected, (50, 200), font, font_scale, color, thickness)
 
-    text_word = f"Change Increment"
-    cv2.putText(image, text_word, (50, 400), font, font_scale, (255, 0, 0), thickness)
-    
+
+    cv2.putText(image, "Change Increment", (50, 400), font, font_scale, (255, 0, 0), thickness)
+
+    cv2.putText(image, "Sign 'F' for large or 'W' for small", (50, 470), font, 1, (255, 0, 0), 2)
     return image    
 
 # Create images for save mode or saved angles mode
@@ -310,12 +320,17 @@ def create_display_image5(detected_gesture, word_spelled):
     text_detected = f"Detected: {detected_gesture}" if detected_gesture else "Detected: None"
     cv2.putText(image, text_detected, (50, 200), font, font_scale, color, thickness)
     
-    text_word = f"Word: {''.join(word_spelled)}"
+    text_word = f"Path: {''.join(word_spelled)}"
     cv2.putText(image, text_word, (50, 400), font, font_scale, color, thickness)
 
     traj_word = "Trajectory Mode: Select saved files and sign 'H' to execute"
     cv2.putText(image, traj_word, (50, 100), font, 1, (0, 175, 255), 2)
    
+    key1 = "'G' to close gripper"
+    key2 = "'U' to open gripper"
+    cv2.putText(image, key1, (50, 465), font, 1, (0,0,0), 2)
+    cv2.putText(image, key2, (50, 500), font, 1, (0,0,0), 2)
+    
     return image
 
 
