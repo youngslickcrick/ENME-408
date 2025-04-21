@@ -56,6 +56,9 @@ traj_mode = False
 coolguy = False
 joint = False
 joint_word = None
+joint_control_mode = False
+traj_mode = False
+gesture_pool = []
 
 #FROM MEDIAPIPE TEMPLATE: Mediapipe settings, decides the accuracy and mode of the landmarks
 mp_hands = mp.solutions.hands
@@ -212,8 +215,11 @@ def create_display_image2(detected_gesture):
     cv2.putText(image, text_word, (50, 400), font, font_scale, (255, 0, 0), thickness)
     
     # Displays the increment depending on the setting selected
+    
     if increment == 0.5:
         incr = "Large"
+    elif increment == 1.0:
+        incr = "Huge"
     elif increment == 0.01:
         incr = "Small"
     else:
@@ -374,19 +380,56 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
     global saved_angles_mode
     global charac 
     global coolguy
-  
+    global joint_control_mode
+    global gesture_pool
+    
     # Initializes a ROS node for running
     rospy.init_node("sawyer_gesture_recognition", anonymous=True) 
+    
+    
+    # Variable initialization
+    
+
+    delta = 0
+    gripper = True
+    joint = None 
+    gesture_start_time = None
+    detected_gesture = None
+    confirmed_gesture = None
+    head_display = intera_interface.HeadDisplay()
+    limb = intera_interface.Limb()
+    limb.__init__(limb ='right', synchronous_pub=False)
+    currentlb = limb.joint_angle('right_j0')
+    # Sets recent_detections to have a length 5 max
+    recent_detections = deque(maxlen=history_frames)  
+    word_spelled = []
+    traj_mode = False
+    #joint_control_mode = False
+    
+    
     
     # Define the path where the saved gesture landmark files are stored
     SAVED_GESTURES_PATH = "/home/ysc/ros_ws/src/intera_sdk/intera_examples/scripts/captured_gestures_ros"
     # Initialize a dictionary to store the loaded and normalized landmarks
     saved_landmarks = {}
     # Defining which gesture labels will be utilized
-    gesture_labels1 = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "1","2","3","4","5","6","7","8","9" ,"finish", "backspace", "midfi"]  
+    
+    all_labels = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "1","2","3","4","5","6","7","8","9" ,"finish", "backspace", "midfi"] 
+    letter_labels = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y"]
+    number_labels = ["1","2","3","4","5","6","7","8","9"]
+    control_labels = ["finish", "backspace", "midfi", "G", "U"]
+    joint_labels = ["O","1","2","3","4","5","6"]
+    joint_labels_control = ["P", "I","D"]
+    save_labels = ["S"]
+    execution_labels = ["E"]
+    increment_labels = ["W","F","Q"]
+    traj_labels = ["H"]
+    gesture_pool = all_labels
+    
+
 
     # For every label in gesture labels
-    for label in gesture_labels1:
+    for label in gesture_pool:
         json_path = os.path.join(SAVED_GESTURES_PATH, f"{label}_asl_landmarks_ros.json")
         # Checks if the file exists
         if os.path.exists(json_path):
@@ -416,22 +459,6 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
     cameras.set_callback(camera_name, camera_callback, rectify_image=True, callback_args=(camera_name,))
  
     
-    # Variable initialization
-    delta = 0
-    gripper = True
-    joint_control_mode = False
-    joint = None 
-    gesture_start_time = None
-    detected_gesture = None
-    confirmed_gesture = None
-    head_display = intera_interface.HeadDisplay()
-    limb = intera_interface.Limb()
-    limb.__init__(limb ='right', synchronous_pub=False)
-    currentlb = limb.joint_angle('right_j0')
-    # Sets recent_detections to have a length 5 max
-    recent_detections = deque(maxlen=history_frames)  
-    word_spelled = []
-    traj_mode = False
         
     # Joint angles for different positions
     C1 = {'right_j0': 0.1262578125, 'right_j1': 0.422787109375, 'right_j2': 0.2639326171875, 'right_j3': -0.4753544921875, 'right_j4': 2.9767138671875, 'right_j5': -1.6180185546875, 'right_j6': -0.989341796875}
@@ -446,6 +473,31 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
     while not rospy.is_shutdown():
         if latest_frame is None:
             continue
+        
+        if joint_control_mode == True and change_increment == False and joint == None:
+            gesture_pool = joint_labels + control_labels
+        elif joint_control_mode == True and joint != 0 and change_increment == False:
+            gesture_pool = joint_labels_control + control_labels
+        elif change_increment == True and joint_control_mode == True:
+            gesture_pool = increment_labels + control_labels
+        elif save_mode == True:
+            gesture_pool = control_labels + number_labels
+        elif saved_angles_mode == True: 
+            gesture_pool = control_labels + number_labels
+        elif traj_mode == True:
+            gesture_pool = traj_labels + control_labels + number_labels
+        elif pos_mode == True:
+            gesture_pool = all_labels 
+        
+        saved_landmarks = {}
+        for label in gesture_pool:
+            json_path = os.path.join(SAVED_GESTURES_PATH, f"{label}_asl_landmarks_ros.json")
+        # Checks if the file exists
+            if os.path.exists(json_path):
+            # Opens and the file for reading
+                with open(json_path, 'r') as f:
+                # Normalize the loaded landmark data and store it in the saved_landmarks dictionary using the label as the key
+                    saved_landmarks[label] = normalize_landmarks(json.load(f))
         
         #Continously updates the frame
         frame = latest_frame.copy()
@@ -592,6 +644,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                         save_mode = False
                                         pos_mode = False
                                         joint_control_mode = True
+                                        gesture_pool = []
 
                                     #If Joint Control Mode is on and a joint has been selected 'I' or 'D' can be used to increase or decrease the joint angle respectively
                                     #A joint can be slected by signing a number 0-6
@@ -603,7 +656,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                         hold_time = 0.0
                                         
                                     #If Joint Control Mode is on, the increment at which the joint angle can be altered can be edited if 'P' is signed
-                                    elif joint_control_mode and confirmed_gesture in ["P", "F", "W","I","D"]:
+                                    elif joint_control_mode and confirmed_gesture in ["P", "F", "W","I","D","Q"]:
                                         if confirmed_gesture == "P":
                                             print("CHANGE INCREMENT")
                                             change_increment = True
@@ -620,9 +673,15 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                             sleep = 0.00001
                                             print("Increment Changed to Small")
                                             change_increment = False
+                                            
+                                        elif confirmed_gesture == "Q" and change_increment == True:
+                                            increment = 1
+                                            sleep = 0.05
+                                            print("Increment Changed to Huge")
+                                            change_increment = False
 
                                         #If change increment is true the incremental value at which the joint angles move will be changed from default
-                                        elif increment == 0.5 and confirmed_gesture in ["I", "D"] or increment == 0.01 and confirmed_gesture in ["I", "D"]:
+                                        elif increment == 0.5 and confirmed_gesture in ["I", "D"] or increment == 0.01 and confirmed_gesture in ["I", "D"] or increment == 1.0 and confirmed_gesture in ["I", "D"] :
                                             if confirmed_gesture == "I":
                                                 delta = increment 
                                             elif confirmed_gesture == "D":
