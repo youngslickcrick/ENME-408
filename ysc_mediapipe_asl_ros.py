@@ -325,9 +325,18 @@ def create_display_image5(detected_gesture, word_spelled):
 
     text_detected = f"Detected: {detected_gesture}" if detected_gesture else "Detected: None"
     cv2.putText(image, text_detected, (50, 200), font, font_scale, color, thickness)
-    
-    text_word = f"Path: {''.join(word_spelled)}"
+
+    sword = deque(maxlen=5)
+    sword = ''.join(word_spelled)
+
+    if sword == 5:
+        nl = ''.join(word_spelled)
+    else:
+        nl = ''
+      
+    text_word = f"Path: {sword}"
     cv2.putText(image, text_word, (50, 400), font, font_scale, color, thickness)
+    cv2.putText(image, nl, (50, 450), font, font_scale, color, thickness)
 
     traj_word = "Trajectory Mode: Select saved files and sign 'H' to execute"
     cv2.putText(image, traj_word, (50, 100), font, 1, (0, 175, 255), 2)
@@ -388,8 +397,6 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
     
     
     # Variable initialization
-    
-
     delta = 0
     gripper = True
     joint = None 
@@ -413,9 +420,9 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
     # Initialize a dictionary to store the loaded and normalized landmarks
     saved_landmarks = {}
     # Defining which gesture labels will be utilized
-    
-    all_labels = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "O", "P", "Q", "S", "T", "U", "W", "X", "Y" ,"finish", "backspace", "midfi"] 
-    letter_labels = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y"]
+    letter_labels = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y"]  
+  
+    pos_labels = ["A", "B", "C", "E", "G", "L", "S", "U", "Y" ,"finish", "backspace", "midfi"] 
     number_labels = ["1","2","3","4","5","6","7","8","9"]
     control_labels = ["finish", "backspace", "midfi", "G", "U"]
     joint_labels = ["O","1","2","3","4","5","6"]
@@ -424,7 +431,8 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
     execution_labels = ["E"]
     increment_labels = ["W","F","Q"]
     traj_labels = ["H"]
-    gesture_pool = all_labels
+  
+    gesture_pool = pos_labels
     
 
 
@@ -487,7 +495,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
         elif traj_mode == True:
             gesture_pool = traj_labels + control_labels + number_labels
         elif pos_mode == True:
-            gesture_pool = all_labels 
+            gesture_pool = pos_labels 
         
         saved_landmarks = {}
         for label in gesture_pool:
