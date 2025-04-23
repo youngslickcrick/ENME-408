@@ -171,7 +171,7 @@ def create_display_image1(detected_gesture, word_spelled):
     key3 = "Increment size: 'W' or 'F'"
     key4 = "'S' for Save Mode"
     key5 = "'E' for Execution Mode"
-    key6 = "'T' for Trajectory Mode"
+    key6 = "'Y' for Trajectory Mode"
     key7 = "'G' to close gripper"
     key8 = "'U' to open gripper"
     key9 = "'finish' to exit all modes"
@@ -226,7 +226,7 @@ def create_display_image2(detected_gesture):
         incr = "Default"
         
     if joint == None:
-        joint_word = "Select joint number"
+        joint_word = "Select joint number: 0-6"
     else:
         joint_word = "'P' to change increment"
         
@@ -255,7 +255,7 @@ def create_display_image3(detected_gesture):
 
     cv2.putText(image, "Change Increment", (50, 400), font, font_scale, (255, 0, 0), thickness)
 
-    cv2.putText(image, "Sign 'Q' for huge, 'F' for large or 'W' for small", (50, 470), font, 1, (255, 0, 0), 2)
+    cv2.putText(image, "Sign 'R' for huge, 'F' for large or 'W' for small", (50, 470), font, 1, (255, 0, 0), 2)
     return image    
 
 # Create images for save mode or saved angles mode
@@ -281,7 +281,7 @@ def create_display_image4(detected_gesture):
     cv2.putText(image, text_detected, (50, 200), font, font_scale, color, thickness)
 
     if save_mode == True:
-        save_word = f"Save mode, select save file"
+        save_word = f"Save mode, select save file: 1-9"
         colour = (0, 255, 0)
         saved_angles_mode = False
         if charac in ['1','2','3','4','5','6','7','8','9']:
@@ -294,7 +294,7 @@ def create_display_image4(detected_gesture):
        
         
     elif saved_angles_mode == True:
-        save_word = f"Saved Angles Execution Mode, select saved file"
+        save_word = f"Saved Angles Execution Mode, select saved file: 1-9"
         colour = (0, 0, 255)
         save_mode = False
         if charac in ['1','2','3','4','5','6','7','8','9']:
@@ -425,11 +425,13 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
     pos_labels = ["A", "B", "C", "E", "G", "L", "S", "U", "Y" ,"finish", "backspace", "midfi"] 
     number_labels = ["1","2","3","4","5","6","7","8","9"]
     control_labels = ["finish", "backspace", "midfi", "G", "U"]
-    joint_labels = ["O","1","2","3","4","5","6"]
+    cl = ["backspace","finish"]
+    yes = ["Y","E","S"]
+    joint_labels = ["O","1","2","3","4","5","6","P"]
     joint_labels_control = ["P", "I","D"]
     save_labels = ["S"]
     execution_labels = ["E"]
-    increment_labels = ["W","F","Q"]
+    increment_labels = ["W","F","R"]
     traj_labels = ["H"]
   
     gesture_pool = pos_labels
@@ -483,17 +485,17 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
             continue
         
         if joint_control_mode == True and change_increment == False and joint == None:
-            gesture_pool = joint_labels + control_labels
+            gesture_pool = joint_labels + control_labels + yes
         elif joint_control_mode == True and joint != 0 and change_increment == False:
             gesture_pool = joint_labels_control + control_labels
         elif change_increment == True and joint_control_mode == True:
-            gesture_pool = increment_labels + control_labels
+            gesture_pool = increment_labels + cl
         elif save_mode == True:
-            gesture_pool = control_labels + number_labels
+            gesture_pool = control_labels + number_labels + yes
         elif saved_angles_mode == True: 
-            gesture_pool = control_labels + number_labels
+            gesture_pool = control_labels + number_labels + yes
         elif traj_mode == True:
-            gesture_pool = traj_labels + control_labels + number_labels
+            gesture_pool = traj_labels + control_labels + number_labels + yes
         elif pos_mode == True:
             gesture_pool = pos_labels 
         
@@ -794,6 +796,8 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                     #Select the files a by signing the numbers 1-9, use G and U for closing and opening the gripper
                                     elif charac == 'Y':
                                          traj_mode = True
+                                         save_mode = False
+                                         saved_angles_mode = False
                                          pos_mode = False
                                          gripper = False
                                          joint_mode = False
