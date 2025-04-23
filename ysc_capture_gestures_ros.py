@@ -240,6 +240,8 @@ def open_camera():
             capture_gesture_image(frame, 'finish', hand_landmarks)                
         elif key == ord('j'):
             capture_gesture_image(frame, 'backspace', hand_landmarks)
+        elif key == ord('0'):
+            capture_gesture_image(frame, 'midfi', hand_landmarks) 
         #Closes script if '.' is pressed
         elif key == 46:  
             break
