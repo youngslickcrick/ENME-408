@@ -167,22 +167,22 @@ def create_display_image1(detected_gesture, word_spelled):
     cv2.putText(image, text_word, (50, 400), font, font_scale, color, thickness)
     
     key1 = "'L' for Joint Mode"
-    key2 = "'P' to change increment"
-    key3 = "Increment size: 'W' or 'F'"
+    #key2 = "'P' to change increment"
+    #key3 = "Increment size: 'W' or 'F'"
     key4 = "'S' for Save Mode"
     key5 = "'E' for Execution Mode"
     key6 = "'Y' for Trajectory Mode"
     key7 = "'G' to close gripper"
     key8 = "'U' to open gripper"
-    key9 = "'finish' to exit all modes"
-    key10 = "'backspace' to change joints"
+    key9 = "'finish' to confirm word"
+    key10 = "'backspace' to delete character"
 
     cv2.putText(image, key1, (50, 50), font, 1, (255,0,0), 2)
-    cv2.putText(image, key2, (50, 85), font, 1, (255,0,0), 2)
-    cv2.putText(image, key3, (50, 120), font, 1, (255,0,0), 2)
-    cv2.putText(image, key4, (600, 50), font, 1, (0,255,0), 2)
-    cv2.putText(image, key5, (600, 85), font, 1, (0,0,255), 2)
-    cv2.putText(image, key6, (600, 120), font, 1, (0,175,255), 2)
+    #cv2.putText(image, key2, (50, 85), font, 1, (255,0,0), 2)
+    #cv2.putText(image, key3, (50, 120), font, 1, (255,0,0), 2)
+    cv2.putText(image, key4, (50, 85), font, 1, (0,180,0), 2)
+    cv2.putText(image, key5, (600, 50), font, 1, (0,0,255), 2)
+    cv2.putText(image, key6, (600, 85), font, 1, (0,175,255), 2)
     cv2.putText(image, key7, (50, 465), font, 1, (0,0,0), 2)
     cv2.putText(image, key8, (50, 500), font, 1, (0,0,0), 2)
     cv2.putText(image, key9, (50, 535), font, 1, (0,0,0), 2)
@@ -218,20 +218,34 @@ def create_display_image2(detected_gesture):
     
     if increment == 0.5:
         incr = "Large"
+        num = "0.5"
     elif increment == 1.0:
         incr = "Huge"
+        num = "1.0"
     elif increment == 0.01:
         incr = "Small"
+        num = "0.01"
     else:
         incr = "Default"
+        num = "0.25"
         
     if joint == None:
         joint_word = "Select joint number: 0-6"
     else:
         joint_word = "'P' to change increment"
-        
-    text_word = f"Increment: {incr}"
-    cv2.putText(image, text_word, (50, 500), font, 1, (255, 0, 0), 2)        
+      
+    key7 = "'G' to close gripper"
+    key8 = "'U' to open gripper"
+    key9 = "'finish' to exit to home screen"
+    key10 = "'backspace' to change joints"
+    
+    cv2.putText(image, key7, (600, 500), font, 1, (0,0,0), 2)
+    cv2.putText(image, key8, (600, 535), font, 1, (0,0,0), 2)
+    cv2.putText(image, key9, (50, 500), font, 1, (0,0,0), 2)
+    cv2.putText(image, key10, (50, 535), font, 1, (0,0,0), 2)  
+      
+    text_word = f"Increment: {incr} ({num} rad)"
+    cv2.putText(image, text_word, (50, 460), font, 1, (255, 0, 0), 2)        
     cv2.putText(image, joint_word, (50, 110), font, 1, (255, 0, 0), 2)
         
     return image
@@ -256,6 +270,14 @@ def create_display_image3(detected_gesture):
     cv2.putText(image, "Change Increment", (50, 400), font, font_scale, (255, 0, 0), thickness)
 
     cv2.putText(image, "Sign 'R' for huge, 'F' for large or 'W' for small", (50, 470), font, 1, (255, 0, 0), 2)
+    cv2.putText(image, "'R' = 1.0 rad, 'F' = 0.5 rad, or 'W' = 0.01 rad", (50, 505), font, 1, (255, 0, 0), 2)
+    
+    key10 = "'backspace' to exit change increment screen"
+    cv2.putText(image, key10, (50, 540), font, 1, (0,0,0), 2) 
+    
+    key9 = "'finish' to exit to home screen"
+    cv2.putText(image, key9, (50, 575), font, 1, (0,0,0), 2)
+    
     return image    
 
 # Create images for save mode or saved angles mode
@@ -282,8 +304,10 @@ def create_display_image4(detected_gesture):
 
     if save_mode == True:
         save_word = f"Save mode, select save file: 1-9"
-        colour = (0, 255, 0)
+        colour = (0, 180, 0)
         saved_angles_mode = False
+        key = "'E' for Execution Mode"
+        col = (0,0,255)
         if charac in ['1','2','3','4','5','6','7','8','9']:
             number = charac
             text_word1 = "Current joint angles saved in" 
@@ -297,6 +321,8 @@ def create_display_image4(detected_gesture):
         save_word = f"Saved Angles Execution Mode, select saved file: 1-9"
         colour = (0, 0, 255)
         save_mode = False
+        key = "'S' for Save Mode"
+        col = (0,230,0)
         if charac in ['1','2','3','4','5','6','7','8','9']:
             number = charac
             text_word1 = "Moving to" 
@@ -308,6 +334,16 @@ def create_display_image4(detected_gesture):
     cv2.putText(image, save_word, (50, 110), font, 1, colour, 2)
     cv2.putText(image, text_word1, (50, 400), font, font_scale, color, thickness)
     cv2.putText(image, text_word2, (50, 450), font, font_scale, color, thickness)    
+    
+
+
+    key9 = "'Y' for Trajectory Mode"
+
+    cv2.putText(image, key, (50, 500), font, 1, col, 2)
+    cv2.putText(image, key9, (50, 535), font, 1, (0,175,255), 2)
+            
+    key9 = "'finish' to exit to home screen"
+    cv2.putText(image, key9, (50, 570), font, 1, (0,0,0), 2)
     
     return image    
 
@@ -341,11 +377,20 @@ def create_display_image5(detected_gesture, word_spelled):
     traj_word = "Trajectory Mode: Select saved files and sign 'H' to execute"
     cv2.putText(image, traj_word, (50, 100), font, 1, (0, 175, 255), 2)
    
-    key1 = "'G' to close gripper"
-    key2 = "'U' to open gripper"
+   
+    key4 = "'S' for Save Mode"
+    key5 = "'E' for Execution Mode"
+    cv2.putText(image, key4, (600, 465), font, 1, (0,180,0), 2)
+    cv2.putText(image, key5, (600, 500), font, 1, (0,0,255), 2)
+    
+    key1 = "'G' to add close gripper to path"
+    key2 = "'U' to add open gripper to path"
     cv2.putText(image, key1, (50, 465), font, 1, (0,0,0), 2)
     cv2.putText(image, key2, (50, 500), font, 1, (0,0,0), 2)
-    
+
+    key9 = "'finish' to exit to home screen"
+    cv2.putText(image, key9, (50, 535), font, 1, (0,0,0), 2)
+        
     return image
 
 
