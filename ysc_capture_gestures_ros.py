@@ -122,7 +122,7 @@ def open_camera():
     #FROM RETHINKROBOTICS TEMPLATE: Callback method used to show the camera image
     cameras.set_callback(camera_name, camera_callback, rectify_image=True, callback_args=(camera_name,))
 
-    print("Press 'a' for 'A', 'b' for 'B', 'c' for 'C', 'd' for 'D', etc. 'z' for 'Finish', 'j' for 'Backspace'. Press '.' to exit.")
+    print("Press a for 'A', b for 'B', c for 'C', etc. 1 for '1', 2 for '2', etc. z for 'finish', j for 'backspace', and  0 for an easter egg, press '.' to exit.")
 
     # Keeps the function looping as long ROS is active
     while not rospy.is_shutdown():
@@ -187,9 +187,7 @@ def open_camera():
         elif key == ord('i'):
             capture_gesture_image(frame, 'I', hand_landmarks)             
         elif key == ord('k'):
-            capture_gesture_image(frame, 'K', hand_landmarks)
-        #elif key == ord('j'):
-         #   capture_gesture_image(frame, 'J', hand_landmarks)   
+            capture_gesture_image(frame, 'K', hand_landmarks)  
         elif key == ord('l'):
             capture_gesture_image(frame, 'L', hand_landmarks) 
         elif key == ord('m'):
