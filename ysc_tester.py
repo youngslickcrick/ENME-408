@@ -64,7 +64,7 @@ timer_running = False
 stop_timer = False
 elapsed = 0
 sword = None
-elapsed = 0
+
 #FROM MEDIAPIPE TEMPLATE: Mediapipe settings, decides the accuracy and mode of the landmarks
 mp_hands = mp.solutions.hands
 hands = mp_hands.Hands(static_image_mode=False, 
@@ -575,7 +575,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
     recent_detections = deque(maxlen=history_frames)  
     word_spelled = []
     traj_mode = False
-    
+    naming = False
     #joint_control_mode = False
     
     
@@ -587,7 +587,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
     # Defining which gesture labels will be utilized
     letter_labels = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y"]  
   
-    pos_labels = ["A", "B", "C", "E", "G", "L", "S", "U", "Y" ,"finish", "backspace", "midfi"] 
+    pos_labels = ["A", "B", "C", "E", "G", "L", "S", "U", "Y", "X" ,"finish", "backspace", "midfi"] 
     number_labels = ["1","2","3","4","5","6","7","8","9"]
     control_labels = ["finish", "backspace", "midfi", "G", "U"]
     cl = ["backspace","finish"]
@@ -667,7 +667,8 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
             gesture_pool = traj_labels + control_labels + number_labels + yes
         elif pos_mode == True:
             gesture_pool = pos_labels 
-
+        elif naming == True:
+            gesture_pool = control_labels + number_labels + letter_labels
         
         saved_landmarks = {}
         for label in gesture_pool:
@@ -807,15 +808,15 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                     charac = confirmed_gesture
                                   
                                     #If 'A' is signed, arm moves to C3
-                                    if charac == 'A' and pos_mode == True:# and naming == False:
+                                    if charac == 'A' and pos_mode == True and naming == False:
                                         limb.set_joint_position_speed(speed = 0.2)
                                         limb.move_to_joint_positions(C3)                                      
                                     #If 'B' is signed arm moves to the zero position
-                                    elif charac == 'B' and pos_mode == True:# and naming == False:
+                                    elif charac == 'B' and pos_mode == True and naming == False:
                                         limb.set_joint_position_speed(speed = 0.2)
                                         limb.move_to_joint_positions(O)
                                     #If 'C' is signed, arm moves to C1
-                                    elif charac == 'C' and pos_mode == True:# and naming == False:
+                                    elif charac == 'C' and pos_mode == True and naming == False:
                                         limb.set_joint_position_speed(speed = 0.2)
                                         limb.move_to_joint_positions(C1)
                                         
@@ -832,7 +833,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                         grip(close=False)
                                     
                                     #If 'L' is signed Joint Control Mode will turn on
-                                    elif charac == 'L': #and naming == False:
+                                    elif charac == 'L' and naming == False:
                                         print("Joint control mode: Select joint number")
                                         save_mode = False
                                         execution_mode = False
@@ -946,7 +947,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                             #head_pan(newlb)
                                             
                                     #If 'S' is signed Save Mode will turn on
-                                    elif charac == 'S':# and naming == False:
+                                    elif charac == 'S' and naming == False:
                                         save_mode = True
                                         pos_mode = False
                                         execution_mode = False
@@ -965,7 +966,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                             print(f'Joint angles saved to file {number}')
 
                                     #If 'E' is signed Saved Angles Execution Mode will turn on
-                                    elif charac == 'E':# and naming == False:
+                                    elif charac == 'E' and naming == False:
                                         execution_mode = True
                                         save_mode = False
                                         pos_mode = False
@@ -986,7 +987,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
 
                                     #If 'Y' is signed Trajectory Mode is turned on
                                     #Select the files a by signing the numbers 1-9, use G and U for closing and opening the gripper
-                                    elif charac == 'Y':# and naming == False:
+                                    elif charac == 'Y' and naming == False:
                                          traj_mode = True
                                          save_mode = False
                                          execution_mode = False
@@ -1026,7 +1027,8 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                              except Exception as e:
                                                   print("Error: Letter not in directory")
                                                 
-
+                                    elif charac == "X":
+                                        naming = True
                                             
                                          
 
