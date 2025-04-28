@@ -46,7 +46,7 @@ change_increment = False
 pos_mode = True
 number = 0
 save_mode = False
-saved_angles_mode = False
+execution_mode = False
 charac = None
 text_word = None
 text_word1 = None
@@ -64,7 +64,7 @@ timer_running = False
 stop_timer = False
 elapsed = 0
 sword = None
-naming = False
+elapsed = 0
 #FROM MEDIAPIPE TEMPLATE: Mediapipe settings, decides the accuracy and mode of the landmarks
 mp_hands = mp.solutions.hands
 hands = mp_hands.Hands(static_image_mode=False, 
@@ -166,7 +166,7 @@ def create_display_image1(detected_gesture, word_spelled):
 
     timer = f"Time: {elapsed} secs   Score:{max(0, int(10000/((elapsed +1))))} pts" #if gametimer == True else "Time: 0 secs   Score: 0 pts"
     #cv2.putText(image, text, location, font, font_scale, color, thickness)
-    cv2.putText(image, timer, (50, 400), font, font_scale, color, thickness)
+    cv2.putText(image, timer, (50, 400), font, 1.4, color, thickness)
     
     #shortened if else statement
     text_detected = f"Detected: {detected_gesture}" if detected_gesture else "Detected: None"
@@ -207,6 +207,7 @@ def create_display_image1(detected_gesture, word_spelled):
 def create_display_image2(detected_gesture):
     global incr, joint, joint_word
     global elapsed, gametimer
+    global charac
     
     width, height = 1024, 600  
     image = np.full((height, width, 3), (255, 255, 255), dtype=np.uint8) 
@@ -225,7 +226,7 @@ def create_display_image2(detected_gesture):
     cv2.putText(image, text_word, (50, 300), font, font_scale, (255, 0, 0), thickness)
     
     timer = f"Time: {elapsed} secs   Score:{max(0, int(10000/((elapsed +1))))} pts"
-    cv2.putText(image, timer, (50, 400), font, font_scale, color, thickness)
+    cv2.putText(image, timer, (50, 400), font, 1.4, color, thickness)
 
     
     if increment == 0.5:
@@ -250,6 +251,37 @@ def create_display_image2(detected_gesture):
     key8 = "'U' to open gripper"
     key9 = "'finish' to exit to home screen"
     key10 = "'backspace' to change joints"
+    
+  
+    
+    if save_mode == True:
+        key1 = f"Save Mode On"
+        colour = (0, 180, 0)
+        execution_mode = False
+        col = (0,0,255)
+        if charac in ['1','2','3','4','5','6','7','8','9']:
+            number = charac
+            key2 = "File {number} Selected" 
+        else:
+            key2 = "Select File"
+
+            
+    elif execution_mode == True:
+        key1 = f"Execution Mode On"
+        colour = (0, 0, 255)
+        save_mode = False
+        col = (0,230,0)
+        if charac in ['1','2','3','4','5','6','7','8','9']:
+            number = charac
+            key2 = "File {number} Selected" 
+        else:
+            key2 = "Select File"
+
+
+    
+    
+    cv2.putText(image, key1, (600, 110), font, 1, col, 2)
+    cv2.putText(image, key2, (600, 145), font, 1, col, 2)
     
     cv2.putText(image, key7, (600, 500), font, 1, (0,0,0), 2)
     cv2.putText(image, key8, (600, 535), font, 1, (0,0,0), 2)
@@ -282,7 +314,7 @@ def create_display_image3(detected_gesture):
     cv2.putText(image, "Change Increment", (50, 300), font, font_scale, (255, 0, 0), thickness)
     
     timer = f"Time: {elapsed} secs   Score:{max(0, int(10000/((elapsed +1))))} pts"
-    cv2.putText(image, timer, (50, 400), font, font_scale, color, thickness)
+    cv2.putText(image, timer, (50, 400), font, 1.4, color, thickness)
     
     cv2.putText(image, "Sign 'R' for huge, 'F' for large or 'W' for small", (50, 470), font, 1, (255, 0, 0), 2)
     cv2.putText(image, "'R' = 1.0 rad, 'F' = 0.5 rad, or 'W' = 0.01 rad", (50, 505), font, 1, (255, 0, 0), 2)
@@ -298,7 +330,7 @@ def create_display_image3(detected_gesture):
 # Create images for save mode or saved angles mode
 def create_display_image4(detected_gesture):
     global save_mode
-    global saved_angles_mode
+    global execution_mode
     global charac
     global text_word
     global text_word1
@@ -318,12 +350,12 @@ def create_display_image4(detected_gesture):
     cv2.putText(image, text_detected, (50, 200), font, font_scale, color, thickness)
 
     timer = f"Time: {elapsed} secs   Score:{max(0, int(10000/((elapsed +1))))} pts"
-    cv2.putText(image, timer, (50, 400), font, font_scale, color, thickness)
+    cv2.putText(image, timer, (50, 400), font, 1.4, color, thickness)
     
     if save_mode == True:
         save_word = f"Save mode, select save file: 1-9"
         colour = (0, 180, 0)
-        saved_angles_mode = False
+        execution_mode = False
         key = "'E' for Execution Mode"
         col = (0,0,255)
         if charac in ['1','2','3','4','5','6','7','8','9']:
@@ -335,7 +367,7 @@ def create_display_image4(detected_gesture):
             text_word2 = ""
        
         
-    elif saved_angles_mode == True:
+    elif execution_mode == True:
         save_word = f"Saved Angles Execution Mode, select saved file: 1-9"
         colour = (0, 0, 255)
         save_mode = False
@@ -350,8 +382,8 @@ def create_display_image4(detected_gesture):
             text_word2 = ""
             
     cv2.putText(image, save_word, (50, 110), font, 1, colour, 2)
-    cv2.putText(image, text_word1, (50, 300), font, font_scale, color, thickness)
-    cv2.putText(image, text_word2, (50, 450), font, font_scale, color, thickness)    
+    cv2.putText(image, text_word1, (50, 270), font, font_scale, color, thickness)
+    cv2.putText(image, text_word2, (50, 330), font, font_scale, color, thickness)    
     
 
 
@@ -517,13 +549,13 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
     global change_increment
     global pos_mode
     global save_mode
-    global saved_angles_mode
+    global execution_mode
     global charac 
     global coolguy
     global joint_control_mode
     global gesture_pool
     global gametimer
-    global naming
+    global elapsed
     # Initializes a ROS node for running
     rospy.init_node("sawyer_gesture_recognition", anonymous=True) 
     
@@ -559,7 +591,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
     number_labels = ["1","2","3","4","5","6","7","8","9"]
     control_labels = ["finish", "backspace", "midfi", "G", "U"]
     cl = ["backspace","finish"]
-    yes = ["Y","E","S"]
+    yes = ["Y","E","S","L"]
     joint_labels = ["O","1","2","3","4","5","6","P"]
     joint_labels_control = ["P", "I","D"]
     save_labels = ["S"]
@@ -621,7 +653,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
 
         
         
-        if joint_control_mode == True and change_increment == False and joint == None:
+        if joint_control_mode == True and change_increment == False and joint == None and save_mode == False and execution_mode == False:
             gesture_pool = joint_labels + control_labels + yes
         elif joint_control_mode == True and joint != 0 and change_increment == False:
             gesture_pool = joint_labels_control + control_labels
@@ -629,7 +661,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
             gesture_pool = increment_labels + cl
         elif save_mode == True:
             gesture_pool = control_labels + number_labels + yes
-        elif saved_angles_mode == True: 
+        elif execution_mode == True: 
             gesture_pool = control_labels + number_labels + yes
         elif traj_mode == True:
             gesture_pool = traj_labels + control_labels + number_labels + yes
@@ -722,14 +754,13 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                     increment = 0
                                     change_increment = False
                                     save_mode = False
-                                    saved_angles_mode = False
+                                    execution_mode = False
                                     gripper = True
                                     traj_mode = False
                                     coolguy = False
                                     sword = ''.join(word_spelled)
+                                
                                     
-
-
                                     
                                     if sword == 'WV':
                                         limb.move_to_joint_positions({"right_j0": -3.015984375, "right_j1": -1.2903583984375, "right_j2": -3.042607421875, "right_j3": 0.05406640625, "right_j4": 2.5971845703125, "right_j5": 0.3070927734375, "right_j6": -2.89143359375})
@@ -749,7 +780,10 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                         stop_game_timer()
                                         gametimer = False  
                                         pos_mode = False
-                             
+                                        
+                                    if sword == "BB":
+                                        elapsed = 0                             
+                                        
                                     word_spelled = []
 
 
@@ -757,6 +791,8 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                 elif label == "backspace":
                                     joint = None
                                     change_increment = False
+                                    save_mode = False
+                                    execution_mode = False
                                     #increment = 0
                                     if word_spelled:
                                         word_spelled.pop()  
@@ -771,15 +807,15 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                     charac = confirmed_gesture
                                   
                                     #If 'A' is signed, arm moves to C3
-                                    if charac == 'A' and pos_mode == True and naming == False:
+                                    if charac == 'A' and pos_mode == True:# and naming == False:
                                         limb.set_joint_position_speed(speed = 0.2)
                                         limb.move_to_joint_positions(C3)                                      
                                     #If 'B' is signed arm moves to the zero position
-                                    elif charac == 'B' and pos_mode == True and naming == False:
+                                    elif charac == 'B' and pos_mode == True:# and naming == False:
                                         limb.set_joint_position_speed(speed = 0.2)
                                         limb.move_to_joint_positions(O)
                                     #If 'C' is signed, arm moves to C1
-                                    elif charac == 'C' and pos_mode == True and naming == False:
+                                    elif charac == 'C' and pos_mode == True:# and naming == False:
                                         limb.set_joint_position_speed(speed = 0.2)
                                         limb.move_to_joint_positions(C1)
                                         
@@ -796,9 +832,11 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                         grip(close=False)
                                     
                                     #If 'L' is signed Joint Control Mode will turn on
-                                    elif charac == 'L' and naming == False:
+                                    elif charac == 'L': #and naming == False:
                                         print("Joint control mode: Select joint number")
                                         save_mode = False
+                                        execution_mode = False
+                                        traj_mode = False
                                         pos_mode = False
                                         joint_control_mode = True
                                         gesture_pool = []
@@ -908,11 +946,11 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                             #head_pan(newlb)
                                             
                                     #If 'S' is signed Save Mode will turn on
-                                    elif charac == 'S' and naming == False:
+                                    elif charac == 'S':# and naming == False:
                                         save_mode = True
                                         pos_mode = False
-                                        saved_angles_mode = False
-                                        joint_control_mode = False
+                                        execution_mode = False
+                                       # joint_control_mode = False
                                         change_increment == False
                                         hold_time = 1
                                         print('Entering Save Mode, select save file')
@@ -927,17 +965,17 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                             print(f'Joint angles saved to file {number}')
 
                                     #If 'E' is signed Saved Angles Execution Mode will turn on
-                                    elif charac == 'E' and naming == False:
-                                        saved_angles_mode = True
+                                    elif charac == 'E':# and naming == False:
+                                        execution_mode = True
                                         save_mode = False
                                         pos_mode = False
-                                        joint_control_mode = False
+                                        #joint_control_mode = False
                                         change_increment == False
                                         hold_time = .8
                                         print('Entering Saved Angles Mode, select saved file')
 
                                     #If save angles mode is on select a number 1-9 to open the saved file and move the joint angles to
-                                    elif saved_angles_mode and charac in ['1','2','3','4','5','6','7','8','9']:
+                                    elif execution_mode and charac in ['1','2','3','4','5','6','7','8','9']:
                                         number = charac
                                         #Opens file based on number signed and reads the joint angles
                                         with open(f"saved_joint_angles_{number}", "r") as f:
@@ -948,10 +986,10 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
 
                                     #If 'Y' is signed Trajectory Mode is turned on
                                     #Select the files a by signing the numbers 1-9, use G and U for closing and opening the gripper
-                                    elif charac == 'Y' and naming == False:
+                                    elif charac == 'Y':# and naming == False:
                                          traj_mode = True
                                          save_mode = False
-                                         saved_angles_mode = False
+                                         execution_mode = False
                                          pos_mode = False
                                          gripper = False
                                          joint_mode = False
@@ -1022,7 +1060,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
         cv2.imshow("Sawyer Head Camera - Gesture Recognition", frame)
 
         # Displays images for Joint Control Mode
-        if joint_control_mode == True and change_increment == False and save_mode == False and saved_angles_mode == False and traj_mode == False:
+        if joint_control_mode == True and change_increment == False and save_mode == False and execution_mode == False and traj_mode == False:
             # Defines the image created by the function
             display_img = create_display_image2(detected_gesture)
             # Defines the path where the image will be saved (tmp is used to store files temporarily)
@@ -1040,7 +1078,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
             head_display.display_image(temp_image_path, display_in_loop=False, display_rate=10.0)
           
         # Displays images for Save Mode
-        elif save_mode == True and pos_mode == False or saved_angles_mode == True and pos_mode == False:
+        elif save_mode == True and pos_mode == False or execution_mode == True and pos_mode == False:
             display_img = create_display_image4(detected_gesture)
             temp_image_path = "/tmp/sawyer_display.png"
             cv2.imwrite(temp_image_path, display_img)  
