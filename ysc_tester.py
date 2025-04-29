@@ -759,6 +759,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                     gripper = True
                                     traj_mode = False
                                     coolguy = False
+                                    naming = False
                                     sword = ''.join(word_spelled)
                                 
                                     
