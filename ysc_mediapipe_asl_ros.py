@@ -211,7 +211,7 @@ def create_display_image1(detected_gesture, word_spelled):
 # Create images for joint control mode
 def create_display_image2(detected_gesture):
     global incr, joint, joint_word
-    global elapsed, gametimer
+    global elapsed, gametimer, timer_off
     global charac, save_mode, execution_mode
     
     width, height = 1024, 600  
@@ -222,7 +222,6 @@ def create_display_image2(detected_gesture):
     thickness = 3
     color = (0, 0, 0)  
 
-    
     text_detected = f"Detected: {detected_gesture}" if detected_gesture else "Detected: None"
     cv2.putText(image, text_detected, (50, 200), font, font_scale, color, thickness)
 
@@ -231,8 +230,11 @@ def create_display_image2(detected_gesture):
     cv2.putText(image, text_word, (50, 300), font, font_scale, (255, 0, 0), thickness)
     
     timer = f"Time: {elapsed} secs   Score:{max(0, int(10000/((elapsed +1))))} pts"
-    cv2.putText(image, timer, (50, 400), font, 1.4, color, thickness)
 
+    if timer_off:
+        cv2.putText(image, "", (50, 400), font, 1.4, color, thickness)
+    else:
+        cv2.putText(image, timer, (50, 400), font, 1.4, color, thickness)
     
     if increment == 0.5:
         incr = "Large"
@@ -296,7 +298,7 @@ def create_display_image2(detected_gesture):
 # Create images for changing the increment
 def create_display_image3(detected_gesture):
     global incr, increment
-    global elapsed, gametimer
+    global elapsed, gametimer, timer_off
         
     width, height = 1024, 600  
     image = np.full((height, width, 3), (255, 255, 255), dtype=np.uint8) 
@@ -313,8 +315,11 @@ def create_display_image3(detected_gesture):
     cv2.putText(image, "Change Increment", (50, 300), font, font_scale, (255, 0, 0), thickness)
     
     timer = f"Time: {elapsed} secs   Score:{max(0, int(10000/((elapsed +1))))} pts"
-    cv2.putText(image, timer, (50, 400), font, 1.4, color, thickness)
-    
+    if timer_off:
+        cv2.putText(image, "", (50, 400), font, 1.4, color, thickness)
+    else:
+        cv2.putText(image, timer, (50, 400), font, 1.4, color, thickness)
+        
     cv2.putText(image, "Sign 'R' for huge, 'F' for large or 'W' for small", (50, 470), font, 1, (255, 0, 0), 2)
     cv2.putText(image, "'R' = 1.0 rad, 'F' = 0.5 rad, or 'W' = 0.01 rad", (50, 505), font, 1, (255, 0, 0), 2)
     
@@ -335,7 +340,7 @@ def create_display_image4(detected_gesture):
     global text_word1
     global text_word2
     global save_word
-    
+    global timer_off, elapsed
     width, height = 1024, 600  
     image = np.full((height, width, 3), (255, 255, 255), dtype=np.uint8) 
 
@@ -349,7 +354,10 @@ def create_display_image4(detected_gesture):
     cv2.putText(image, text_detected, (50, 200), font, font_scale, color, thickness)
 
     timer = f"Time: {elapsed} secs   Score:{max(0, int(10000/((elapsed +1))))} pts"
-    cv2.putText(image, timer, (50, 400), font, 1.4, color, thickness)
+    if timer_off:
+        cv2.putText(image, "", (50, 400), font, 1.4, color, thickness)
+    else:
+        cv2.putText(image, timer, (50, 400), font, 1.4, color, thickness)
     
     if save_mode == True:
         save_word = f"Save mode, select save file: 1-9"
@@ -399,7 +407,7 @@ def create_display_image4(detected_gesture):
 
 # Create images for trajectory mode
 def create_display_image5(detected_gesture, word_spelled):
-
+    global timer_off, elapsed
     width, height = 1024, 600  
     image = np.full((height, width, 3), (255, 255, 255), dtype=np.uint8) 
 
@@ -441,7 +449,10 @@ def create_display_image5(detected_gesture, word_spelled):
     cv2.putText(image, key9, (50, 535), font, 1, (0,0,0), 2)
 
     timer = f"Time: {elapsed} secs   Score:{max(0, int(10000/((elapsed +1))))} pts"
-    cv2.putText(image, timer, (50, 400), font, font_scale, color, thickness)        
+    if timer_off:
+        cv2.putText(image, "", (50, 400), font, 1.4, color, thickness)
+    else:
+        cv2.putText(image, timer, (50, 400), font, 1.4, color, thickness)        
     return image
 
 def create_display_image6(detected_gesture, word_spelled):
@@ -754,6 +765,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                 if label == "finish":
                                     print(f"Word Confirmed: {''.join(word_spelled)}")
                                     hold_time = 1
+                                    threshold = 0.07
                                     joint_control_mode = False
                                     joint = None
                                     confirmed_gesture = None
@@ -879,7 +891,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                         hold_time = 0.0
                                         
                                     #If Joint Control Mode is on, the increment at which the joint angle can be altered can be edited if 'P' is signed
-                                    elif joint_control_mode and confirmed_gesture in ["P", "F", "W","I","D","R"]:
+                                    elif joint_control_mode and confirmed_gesture in ["P", "F", "W","I","D","R","G","U"]:
                                         if confirmed_gesture == "P":
                                             print("CHANGE INCREMENT")
                                             change_increment = True
@@ -1021,6 +1033,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                          pos_mode = False
                                          gripper = False
                                          joint_control_mode = False
+                                         threshold = 0.06
                                          hold_time = 1.0
                                          word_spelled = []
                                          print('Entering Trajectory Mode: Select Saved Files')
