@@ -781,15 +781,15 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                         limb.move_to_joint_positions({"right_j0": -2.7919013671875, "right_j1": -1.892212890625, "right_j2": -3.042751953125, "right_j3": 0.23948828125, "right_j4": 2.9765078125, "right_j5": 0.3070927734375, "right_j6": -2.8912275390625})
 
                                     #After word is confirmed, the list is emptied  
-                                    if sword == 'B':
-                                        start_game_timer()
-                                        gametimer = True
-                                    
-                                    elif sword == 'B' and elapsed > 1:
+                                    if sword == 'B' and elapsed > 1:
                                         stop_game_timer()
                                         gametimer = False  
                                         pos_mode = False
-                                        
+                                    
+                                    elif sword == 'B':
+                                        start_game_timer()
+                                        gametimer = True                                      
+                                      
                                     elif sword == "BB":
                                         elapsed = 0         
                                         
