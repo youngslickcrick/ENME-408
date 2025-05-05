@@ -64,7 +64,7 @@ timer_running = False
 stop_timer = False
 elapsed = 0
 sword = None
-
+timer_off = False
 #FROM MEDIAPIPE TEMPLATE: Mediapipe settings, decides the accuracy and mode of the landmarks
 mp_hands = mp.solutions.hands
 hands = mp_hands.Hands(static_image_mode=False, 
@@ -142,7 +142,7 @@ def weighted_distance(saved, detected):
 
 # Create images for posistion mode
 def create_display_image1(detected_gesture, word_spelled):
-    global elapsed, gametimer
+    global elapsed, gametimer, timer_off
     #1024x600 pixels
 
     width, height = 1024, 600  
@@ -166,7 +166,12 @@ def create_display_image1(detected_gesture, word_spelled):
 
     timer = f"Time: {elapsed} secs   Score:{max(0, int(10000/((elapsed +1))))} pts" #if gametimer == True else "Time: 0 secs   Score: 0 pts"
     #cv2.putText(image, text, location, font, font_scale, color, thickness)
-    cv2.putText(image, timer, (50, 400), font, 1.4, color, thickness)
+
+    
+    if timer_off:
+        cv2.putText(image, "", (50, 400), font, 1.4, color, thickness)
+    else:
+        cv2.putText(image, timer, (50, 400), font, 1.4, color, thickness)
     
     #shortened if else statement
     text_detected = f"Detected: {detected_gesture}" if detected_gesture else "Detected: None"
@@ -206,8 +211,8 @@ def create_display_image1(detected_gesture, word_spelled):
 # Create images for joint control mode
 def create_display_image2(detected_gesture):
     global incr, joint, joint_word
-    global elapsed, gametimer
-    global charac
+    global elapsed, gametimer, timer_off
+    global charac, save_mode, execution_mode
     
     width, height = 1024, 600  
     image = np.full((height, width, 3), (255, 255, 255), dtype=np.uint8) 
@@ -217,7 +222,6 @@ def create_display_image2(detected_gesture):
     thickness = 3
     color = (0, 0, 0)  
 
-    
     text_detected = f"Detected: {detected_gesture}" if detected_gesture else "Detected: None"
     cv2.putText(image, text_detected, (50, 200), font, font_scale, color, thickness)
 
@@ -226,8 +230,11 @@ def create_display_image2(detected_gesture):
     cv2.putText(image, text_word, (50, 300), font, font_scale, (255, 0, 0), thickness)
     
     timer = f"Time: {elapsed} secs   Score:{max(0, int(10000/((elapsed +1))))} pts"
-    cv2.putText(image, timer, (50, 400), font, 1.4, color, thickness)
 
+    if timer_off:
+        cv2.putText(image, "", (50, 400), font, 1.4, color, thickness)
+    else:
+        cv2.putText(image, timer, (50, 400), font, 1.4, color, thickness)
     
     if increment == 0.5:
         incr = "Large"
@@ -255,33 +262,27 @@ def create_display_image2(detected_gesture):
   
     
     if save_mode == True:
-        key1 = f"Save Mode On"
-        colour = (0, 180, 0)
         execution_mode = False
-        col = (0,0,255)
+        cv2.putText(image, f"Save Mode On", (600, 110), font, 1, (0,230,0), 2)
         if charac in ['1','2','3','4','5','6','7','8','9']:
             number = charac
-            key2 = "File {number} Selected" 
+            cv2.putText(image, f"File {number} Selected", (600, 145), font, 1, (0,230,0), 2)
         else:
             key2 = "Select File"
+            cv2.putText(image, key2, (600, 145), font, 1, (0,230,0), 2)
 
             
     elif execution_mode == True:
-        key1 = f"Execution Mode On"
-        colour = (0, 0, 255)
         save_mode = False
-        col = (0,230,0)
+        cv2.putText(image, f"Execution Mode On", (600, 110), font, 1, (0,0,255), 2)
         if charac in ['1','2','3','4','5','6','7','8','9']:
             number = charac
-            key2 = "File {number} Selected" 
+            cv2.putText(image, f"File {number} Selected" , (600, 145), font, 1, (0,0,255), 2)
         else:
             key2 = "Select File"
+            cv2.putText(image, key2, (600, 145), font, 1, (0,0,255), 2)
 
 
-    
-    
-    cv2.putText(image, key1, (600, 110), font, 1, col, 2)
-    cv2.putText(image, key2, (600, 145), font, 1, col, 2)
     
     cv2.putText(image, key7, (600, 500), font, 1, (0,0,0), 2)
     cv2.putText(image, key8, (600, 535), font, 1, (0,0,0), 2)
@@ -297,7 +298,7 @@ def create_display_image2(detected_gesture):
 # Create images for changing the increment
 def create_display_image3(detected_gesture):
     global incr, increment
-    global elapsed, gametimer
+    global elapsed, gametimer, timer_off
         
     width, height = 1024, 600  
     image = np.full((height, width, 3), (255, 255, 255), dtype=np.uint8) 
@@ -314,8 +315,11 @@ def create_display_image3(detected_gesture):
     cv2.putText(image, "Change Increment", (50, 300), font, font_scale, (255, 0, 0), thickness)
     
     timer = f"Time: {elapsed} secs   Score:{max(0, int(10000/((elapsed +1))))} pts"
-    cv2.putText(image, timer, (50, 400), font, 1.4, color, thickness)
-    
+    if timer_off:
+        cv2.putText(image, "", (50, 400), font, 1.4, color, thickness)
+    else:
+        cv2.putText(image, timer, (50, 400), font, 1.4, color, thickness)
+        
     cv2.putText(image, "Sign 'R' for huge, 'F' for large or 'W' for small", (50, 470), font, 1, (255, 0, 0), 2)
     cv2.putText(image, "'R' = 1.0 rad, 'F' = 0.5 rad, or 'W' = 0.01 rad", (50, 505), font, 1, (255, 0, 0), 2)
     
@@ -336,7 +340,7 @@ def create_display_image4(detected_gesture):
     global text_word1
     global text_word2
     global save_word
-    
+    global timer_off, elapsed
     width, height = 1024, 600  
     image = np.full((height, width, 3), (255, 255, 255), dtype=np.uint8) 
 
@@ -350,7 +354,10 @@ def create_display_image4(detected_gesture):
     cv2.putText(image, text_detected, (50, 200), font, font_scale, color, thickness)
 
     timer = f"Time: {elapsed} secs   Score:{max(0, int(10000/((elapsed +1))))} pts"
-    cv2.putText(image, timer, (50, 400), font, 1.4, color, thickness)
+    if timer_off:
+        cv2.putText(image, "", (50, 400), font, 1.4, color, thickness)
+    else:
+        cv2.putText(image, timer, (50, 400), font, 1.4, color, thickness)
     
     if save_mode == True:
         save_word = f"Save mode, select save file: 1-9"
@@ -400,7 +407,7 @@ def create_display_image4(detected_gesture):
 
 # Create images for trajectory mode
 def create_display_image5(detected_gesture, word_spelled):
-
+    global timer_off, elapsed
     width, height = 1024, 600  
     image = np.full((height, width, 3), (255, 255, 255), dtype=np.uint8) 
 
@@ -424,7 +431,7 @@ def create_display_image5(detected_gesture, word_spelled):
     cv2.putText(image, text_word, (50, 300), font, font_scale, color, thickness)
     cv2.putText(image, nl, (50, 450), font, font_scale, color, thickness)
 
-    traj_word = "Trajectory Mode: Select saved files and sign 'H' to execute"
+    traj_word = "Trajectory Mode: Select saved files and sign 'M' to execute"
     cv2.putText(image, traj_word, (50, 100), font, 1, (0, 175, 255), 2)
    
    
@@ -442,7 +449,10 @@ def create_display_image5(detected_gesture, word_spelled):
     cv2.putText(image, key9, (50, 535), font, 1, (0,0,0), 2)
 
     timer = f"Time: {elapsed} secs   Score:{max(0, int(10000/((elapsed +1))))} pts"
-    cv2.putText(image, timer, (50, 400), font, font_scale, color, thickness)        
+    if timer_off:
+        cv2.putText(image, "", (50, 400), font, 1.4, color, thickness)
+    else:
+        cv2.putText(image, timer, (50, 400), font, 1.4, color, thickness)        
     return image
 
 def create_display_image6(detected_gesture, word_spelled):
@@ -556,6 +566,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
     global gesture_pool
     global gametimer
     global elapsed
+    global timer_off
     # Initializes a ROS node for running
     rospy.init_node("sawyer_gesture_recognition", anonymous=True) 
     
@@ -597,7 +608,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
     save_labels = ["S"]
     execution_labels = ["E"]
     increment_labels = ["W","F","R"]
-    traj_labels = ["H"]
+    traj_labels = ["M"]
   
     gesture_pool = pos_labels
     
@@ -655,18 +666,25 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
         
         if joint_control_mode == True and change_increment == False and joint == None and save_mode == False and execution_mode == False:
             gesture_pool = joint_labels + control_labels + yes
-        elif joint_control_mode == True and joint != 0 and change_increment == False:
-            gesture_pool = joint_labels_control + control_labels
+            
+        elif joint_control_mode == True and joint != 0 and change_increment == False and save_mode == False and execution_mode == False:
+            gesture_pool = joint_labels_control + control_labels + yes
+            
         elif change_increment == True and joint_control_mode == True:
             gesture_pool = increment_labels + cl
-        elif save_mode == True:
+            
+        elif save_mode == True or joint_control_mode == True and save_mode == True:
             gesture_pool = control_labels + number_labels + yes
-        elif execution_mode == True: 
+            
+        elif execution_mode == True or joint_control_mode == True and execution_mode == True:
             gesture_pool = control_labels + number_labels + yes
+            
         elif traj_mode == True:
             gesture_pool = traj_labels + control_labels + number_labels + yes
+            
         elif pos_mode == True:
             gesture_pool = pos_labels 
+            
         elif naming == True:
             gesture_pool = control_labels + number_labels + letter_labels
         
@@ -747,6 +765,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                 if label == "finish":
                                     print(f"Word Confirmed: {''.join(word_spelled)}")
                                     hold_time = 1
+                                    threshold = 0.07
                                     joint_control_mode = False
                                     joint = None
                                     confirmed_gesture = None
@@ -774,19 +793,38 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                         limb.move_to_joint_positions({"right_j0": -2.7919013671875, "right_j1": -1.892212890625, "right_j2": -3.042751953125, "right_j3": 0.23948828125, "right_j4": 2.9765078125, "right_j5": 0.3070927734375, "right_j6": -2.8912275390625})
 
                                     #After word is confirmed, the list is emptied  
-                                    if sword == 'B':
-                                        start_game_timer()
-                                        gametimer = True
-                                    
                                     if sword == 'B' and elapsed > 1:
                                         stop_game_timer()
                                         gametimer = False  
                                         pos_mode = False
+                                    
+                                    elif sword == 'B':
+                                        start_game_timer()
+                                        gametimer = True                                      
+                                      
+                                    elif sword == "BB":
+                                        elapsed = 0         
                                         
-                                    if sword == "BB":
-                                        elapsed = 0                             
-                                        
+                                    
+                                    elif sword == "BBB" and timer_off == True:
+                                        timer_off = False                                    
+                                    
+
+                                    elif sword == "BBB":
+                                        timer_off = True
+
                                     word_spelled = []
+
+
+
+                                elif label == "backspace" and save_mode == True and joint_control_mode == True or label == "backspace" and execution_mode == True and joint_control_mode == True:
+                                    hold_time = 1.0
+                                    save_mode = False
+                                    execution_mode = False
+                                    #increment = 0
+                                    if word_spelled:
+                                        word_spelled.pop()  
+                                        #print(f"Word after backspace: {''.join(word_spelled)}")
 
 
                                 #Deletes last letter and resets joint, change_increment, and increment
@@ -820,11 +858,14 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                     elif charac == 'C' and pos_mode == True and naming == False:
                                         limb.set_joint_position_speed(speed = 0.2)
                                         limb.move_to_joint_positions(C1)
+
                                         
-                                    elif charac == 'midfi':
+                                    elif charac == 'midfi' and pos_mode:
                                         limb.set_joint_position_speed(speed = 0.2)
                                         limb.move_to_joint_positions(mf)                                                                      
                                         coolguy = True
+                                        
+
                                         
                                     #If 'G' is signed the gripper will close
                                     if charac == 'G' and gripper == True:
@@ -853,7 +894,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                         hold_time = 0.0
                                         
                                     #If Joint Control Mode is on, the increment at which the joint angle can be altered can be edited if 'P' is signed
-                                    elif joint_control_mode and confirmed_gesture in ["P", "F", "W","I","D","R"]:
+                                    elif joint_control_mode and confirmed_gesture in ["P", "F", "W","I","D","R","G","U"]:
                                         if confirmed_gesture == "P":
                                             print("CHANGE INCREMENT")
                                             change_increment = True
@@ -994,14 +1035,15 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                          execution_mode = False
                                          pos_mode = False
                                          gripper = False
-                                         joint_mode = False
+                                         joint_control_mode = False
+                                         threshold = 0.07
                                          hold_time = 1.0
                                          word_spelled = []
                                          print('Entering Trajectory Mode: Select Saved Files')
                                          
 
                                     #If 'H' is signed and Trajectory Mode is on saved files will be executed in succession
-                                    elif charac == 'H' and traj_mode == True:
+                                    elif charac == 'M' and traj_mode == True:
                                          #Defines the string of combined letters
                                          sword = ''.join(word_spelled)
                                          print('Moving to selected saved files')
@@ -1026,6 +1068,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                                          
                                              #If a number, 'G', or 'U' is not signed, this error will be thrown
                                              except Exception as e:
+                                                  word_spelled.pop()
                                                   print("Error: Letter not in directory")
                                                 
                                     elif charac == "X":
@@ -1063,7 +1106,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
         cv2.imshow("Sawyer Head Camera - Gesture Recognition", frame)
 
         # Displays images for Joint Control Mode
-        if joint_control_mode == True and change_increment == False and save_mode == False and execution_mode == False and traj_mode == False:
+        if joint_control_mode == True and change_increment == False and traj_mode == False:# and save_mode == False and execution_mode == False :
             # Defines the image created by the function
             display_img = create_display_image2(detected_gesture)
             # Defines the path where the image will be saved (tmp is used to store files temporarily)
@@ -1081,7 +1124,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
             head_display.display_image(temp_image_path, display_in_loop=False, display_rate=10.0)
           
         # Displays images for Save Mode
-        elif save_mode == True and pos_mode == False or execution_mode == True and pos_mode == False:
+        elif save_mode == True and pos_mode == False and joint_control_mode == False or execution_mode == True and pos_mode == False and joint_control_mode == False:
             display_img = create_display_image4(detected_gesture)
             temp_image_path = "/tmp/sawyer_display.png"
             cv2.imwrite(temp_image_path, display_img)  
@@ -1108,12 +1151,16 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
         
         # Closes script if '.' is pressed
         if cv2.waitKey(1) & 0xFF == 46:
-
             #Displays the robot's default image
             image_path = '/home/ysc/Pictures/Default_Image.png'
             head_display.display_image(image_path, display_in_loop=False, display_rate=1.0)
             break
-
+             
+        elif charac == 'midfi' and execution_mode:
+            image_path = '/home/ysc/Pictures/Default_Image.png'
+            head_display.display_image(image_path, display_in_loop=False, display_rate=1.0)
+            break
+        
     # Closes all camera windows
     cv2.destroyAllWindows()
 
