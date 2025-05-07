@@ -567,6 +567,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
     global gametimer
     global elapsed
     global timer_off
+    global sword
     # Initializes a ROS node for running
     rospy.init_node("sawyer_gesture_recognition", anonymous=True) 
     
@@ -598,11 +599,11 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
     # Defining which gesture labels will be utilized
     letter_labels = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y"]  
   
-    pos_labels = ["A", "B", "C", "E", "G", "L", "S", "U", "Y", "X" ,"finish", "backspace", "midfi"] 
+    pos_labels = ["A", "B", "C", "E", "G", "L", "S", "U", "Y", "Q" ,"finish", "backspace", "midfi"] 
     number_labels = ["1","2","3","4","5","6","7","8","9"]
     control_labels = ["finish", "backspace", "midfi", "G", "U"]
     cl = ["backspace","finish"]
-    yes = ["Y","E","S","L"]
+    yes = ["Y", "E","S","L"]
     joint_labels = ["O","1","2","3","4","5","6","P"]
     joint_labels_control = ["P", "I","D"]
     save_labels = ["S"]
@@ -682,11 +683,11 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
         elif traj_mode == True:
             gesture_pool = traj_labels + control_labels + number_labels + yes
             
-        elif pos_mode == True:
+        elif pos_mode == True and naming == False:
             gesture_pool = pos_labels 
             
         elif naming == True:
-            gesture_pool = control_labels + number_labels + letter_labels
+            gesture_pool = control_labels + letter_labels
         
         saved_landmarks = {}
         for label in gesture_pool:
@@ -784,13 +785,21 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                     
                                     
                                     if sword == 'WV':
-                                        limb.move_to_joint_positions({"right_j0": -3.015984375, "right_j1": -1.2903583984375, "right_j2": -3.042607421875, "right_j3": 0.05406640625, "right_j4": 2.5971845703125, "right_j5": 0.3070927734375, "right_j6": -2.89143359375})
-                                        rospy.sleep(1)
-                                        limb.move_to_joint_positions({"right_j0": -2.7919013671875, "right_j1": -1.892212890625, "right_j2": -3.042751953125, "right_j3": 0.23948828125, "right_j4": 2.9765078125, "right_j5": 0.3070927734375, "right_j6": -2.8912275390625})
-                                        rospy.sleep(1)
-                                        limb.move_to_joint_positions({"right_j0": -3.015984375, "right_j1": -1.2903583984375, "right_j2": -3.042607421875, "right_j3": 0.05406640625, "right_j4": 2.5971845703125, "right_j5": 0.3070927734375, "right_j6": -2.89143359375})
-                                        rospy.sleep(1)
-                                        limb.move_to_joint_positions({"right_j0": -2.7919013671875, "right_j1": -1.892212890625, "right_j2": -3.042751953125, "right_j3": 0.23948828125, "right_j4": 2.9765078125, "right_j5": 0.3070927734375, "right_j6": -2.8912275390625})
+                                        w = {"right_j0": -0.00189453125, "right_j1": -1.2478955078125, "right_j2": -0.0020673828125, "right_j3": 0.0055654296875, "right_j4": -0.00079296875, "right_j5": 0.0011416015625, "right_j6": 0.001919921875}
+                                        v = {"right_j0": -0.0013798828125, "right_j1": -1.995404296875, "right_j2": -0.001201171875, "right_j3": 0.011466796875, "right_j4": -0.005970703125, "right_j5": 0.0003154296875, "right_j6": 0.001919921875}
+                                        
+                                        image_path = "/home/ysc/Pictures/Hello.png"
+                                        head_display.display_image(image_path, display_in_loop=False, display_rate=10.0)
+                                        
+                                        limb.set_joint_position_speed(0.3)
+                                        limb.move_to_joint_positions(w)
+                                        rospy.sleep(.5)
+                                        limb.move_to_joint_positions(v)
+                                        rospy.sleep(.5)
+                                        limb.move_to_joint_positions(w)
+                                        rospy.sleep(.5)
+                                        limb.move_to_joint_positions(v)
+                                        
 
                                     #After word is confirmed, the list is emptied  
                                     if sword == 'B' and elapsed > 1:
@@ -813,6 +822,10 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                     elif sword == "BBB":
                                         timer_off = True
 
+                                    
+                                    elif sword == "Q":
+                                        naming = True
+                                        
                                     word_spelled = []
 
 
@@ -861,6 +874,8 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
 
                                         
                                     elif charac == 'midfi' and pos_mode:
+                                        image_path = "/home/ysc/Pictures/coolguy.jpeg"
+                                        head_display.display_image(image_path, display_in_loop=False, display_rate=10.0)
                                         limb.set_joint_position_speed(speed = 0.2)
                                         limb.move_to_joint_positions(mf)                                                                      
                                         coolguy = True
@@ -1071,8 +1086,6 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                                   word_spelled.pop()
                                                   print("Error: Letter not in directory")
                                                 
-                                    elif charac == "X":
-                                        naming = True
                                             
                                          
 
@@ -1136,10 +1149,6 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
             temp_image_path = "/tmp/sawyer_display.png"
             cv2.imwrite(temp_image_path, display_img)  
             head_display.display_image(temp_image_path, display_in_loop=False, display_rate=10.0)
-       
-        elif coolguy == True: 
-            image_path = "/home/ysc/Pictures/coolguy.jpeg"
-            head_display.display_image(image_path, display_in_loop=False, display_rate=10.0)
        
         # Displays images for Position Mode
         else:
