@@ -144,16 +144,12 @@ def weighted_distance(saved, detected):
 def create_display_image1(detected_gesture, word_spelled):
     global elapsed, gametimer, timer_off
     #1024x600 pixels
-
     width, height = 1024, 600  
-
-
     
     #np.full(dimensions, color, dtype), the alternative would be np.zeroes(dimensions, dtype)
     #Used to create blank images where text can be added
     #(0,0,0) = black, (255,255,255) = white
-    #dtype is the range in which the pixels will be defined, uint8 defines the range as 0-255 which is standard for images
-    
+    #dtype is the range in which the pixels will be defined, uint8 defines the range as 0-255 which is standard for image
     image = np.full((height, width, 3), (255, 255, 255), dtype=np.uint8) 
 
 
@@ -164,9 +160,7 @@ def create_display_image1(detected_gesture, word_spelled):
     thickness2 = 2
     color = (0, 0, 0)  
 
-    timer = f"Time: {elapsed} secs   Score:{max(0, int(10000/((elapsed +1))))} pts" #if gametimer == True else "Time: 0 secs   Score: 0 pts"
-    #cv2.putText(image, text, location, font, font_scale, color, thickness)
-
+    timer = f"Time: {elapsed} secs   Score:{max(0, int(10000/((elapsed +1))))} pts" 
     
     if timer_off:
         cv2.putText(image, "", (50, 400), font, 1.4, color, thickness)
@@ -175,7 +169,6 @@ def create_display_image1(detected_gesture, word_spelled):
     
     #shortened if else statement
     text_detected = f"Detected: {detected_gesture}" if detected_gesture else "Detected: None"
-    #cv2.putText(image, text, location, font, font_scale, color, thickness)
     cv2.putText(image, text_detected, (50, 200), font, font_scale, color, thickness)
 
     
@@ -184,7 +177,6 @@ def create_display_image1(detected_gesture, word_spelled):
     
     key1 = "'L' for Joint Mode"
     key2 = "'B'+'finish' to start and stop timer"
-    #key3 = "Increment size: 'W' or 'F'"
     key4 = "'S' for Save Mode"
     key5 = "'E' for Execution Mode"
     key6 = "'Y' for Trajectory Mode"
@@ -195,7 +187,6 @@ def create_display_image1(detected_gesture, word_spelled):
 
     cv2.putText(image, key1, (50, 50), font, 1, (255,0,0), 2)
     cv2.putText(image, key2, (50, 120), font, 1, (0,0,0), 2)
-    #cv2.putText(image, key3, (50, 120), font, 1, (255,0,0), 2)
     cv2.putText(image, key4, (50, 85), font, 1, (0,180,0), 2)
     cv2.putText(image, key5, (600, 50), font, 1, (0,0,255), 2)
     cv2.putText(image, key6, (600, 85), font, 1, (0,175,255), 2)
@@ -341,6 +332,7 @@ def create_display_image4(detected_gesture):
     global text_word2
     global save_word
     global timer_off, elapsed
+  
     width, height = 1024, 600  
     image = np.full((height, width, 3), (255, 255, 255), dtype=np.uint8) 
 
@@ -392,7 +384,6 @@ def create_display_image4(detected_gesture):
     cv2.putText(image, text_word1, (50, 270), font, font_scale, color, thickness)
     cv2.putText(image, text_word2, (50, 330), font, font_scale, color, thickness)    
     
-
 
     key9 = "'Y' for Trajectory Mode"
 
@@ -598,7 +589,6 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
     saved_landmarks = {}
     # Defining which gesture labels will be utilized
     letter_labels = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y"]  
-  
     pos_labels = ["A", "B", "C", "E", "G", "L", "S", "U", "Y", "Q" ,"finish", "backspace", "midfi"] 
     number_labels = ["1","2","3","4","5","6","7","8","9"]
     control_labels = ["finish", "backspace", "midfi", "G", "U"]
@@ -613,8 +603,6 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
   
     gesture_pool = pos_labels
     
-
-
     # For every label in gesture labels
     for label in gesture_pool:
         json_path = os.path.join(SAVED_GESTURES_PATH, f"{label}_asl_landmarks_ros.json")
@@ -645,9 +633,8 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
     # #FROM RETHINKROBOTICS TEMPLATE: Callback method used to show the camera image
     cameras.set_callback(camera_name, camera_callback, rectify_image=True, callback_args=(camera_name,))
  
-    
         
-    # Joint angles for different positions
+    # Joint angles for different in default mode positions
     C1 = {'right_j0': 0.1262578125, 'right_j1': 0.322787109375, 'right_j2': 0.2639326171875, 'right_j3': -0.4753544921875, 'right_j4': 2.9767138671875, 'right_j5': -1.6180185546875, 'right_j6': -0.989341796875}
     
     O = {'right_j0': 0.0, 'right_j1': 0.0, 'right_j2': 0.0, 'right_j3': -0.0, 'right_j4': 0.0, 'right_j5': 0.0, 'right_j6': -0.0}
@@ -660,10 +647,6 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
     while not rospy.is_shutdown():
         if latest_frame is None:
             continue
-        
-        
-
-        
         
         if joint_control_mode == True and change_increment == False and joint == None and save_mode == False and execution_mode == False:
             gesture_pool = joint_labels + control_labels + yes
@@ -762,7 +745,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                 print(f"Gesture confirmed: {label}")
                                 gesture_start_time = None  
                                 
-                                #Confirms spelled word and resets various modes                       
+                                #Confirms spelled word and closes various modes                       
                                 if label == "finish":
                                     print(f"Word Confirmed: {''.join(word_spelled)}")
                                     hold_time = 1
@@ -783,7 +766,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                     sword = ''.join(word_spelled)
                                 
                                     
-                                    
+                                    #Sets the robot to wave
                                     if sword == 'WV':
                                         w = {"right_j0": -0.00189453125, "right_j1": -1.2478955078125, "right_j2": -0.0020673828125, "right_j3": 0.0055654296875, "right_j4": -0.00079296875, "right_j5": 0.0011416015625, "right_j6": 0.001919921875}
                                         v = {"right_j0": -0.0013798828125, "right_j1": -1.995404296875, "right_j2": -0.001201171875, "right_j3": 0.011466796875, "right_j4": -0.005970703125, "right_j5": 0.0003154296875, "right_j6": 0.001919921875}
@@ -801,46 +784,49 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                         limb.move_to_joint_positions(v)
                                         
 
-                                    #After word is confirmed, the list is emptied  
+                                    #Starts the on-screen timer
                                     if sword == 'B' and elapsed > 1:
                                         stop_game_timer()
                                         gametimer = False  
                                         pos_mode = False
-                                    
+                                    #Stops the on-screen timer
                                     elif sword == 'B':
                                         start_game_timer()
                                         gametimer = True                                      
-                                      
+
+                                    #Resets timer to 0
                                     elif sword == "BB":
                                         elapsed = 0         
                                         
-                                    
+                                    #Removes on-screen timer
                                     elif sword == "BBB" and timer_off == True:
                                         timer_off = False                                    
                                     
-
+                                    #Adds on-screen timer
                                     elif sword == "BBB":
                                         timer_off = True
 
-                                    
+                                    #Turns flag on to give robot access to all letters
                                     elif sword == "Q":
                                         naming = True
-                                        
+                                   
+                                    #After word is confirmed, the list is emptied
                                     word_spelled = []
 
-
-
+                                #Turns off save mode or executon mode if joint control mode
                                 elif label == "backspace" and save_mode == True and joint_control_mode == True or label == "backspace" and execution_mode == True and joint_control_mode == True:
                                     hold_time = 1.0
                                     save_mode = False
                                     execution_mode = False
                                     #increment = 0
+                                    
+                                    #Deletes last letter in string
                                     if word_spelled:
                                         word_spelled.pop()  
                                         #print(f"Word after backspace: {''.join(word_spelled)}")
 
 
-                                #Deletes last letter and resets joint, change_increment, and increment
+                                #Deletes last letter, resets joint and closes change_increment
                                 elif label == "backspace":
                                     joint = None
                                     change_increment = False
@@ -927,7 +913,7 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                             sleep = 0.000001
                                             print("Increment Changed to Small")
                                             change_increment = False
-                                            
+                                        #If 'R' is signed while change increment is on the increment will be changed to huge
                                         elif confirmed_gesture == "R" and change_increment == True:
                                             increment = 1
                                             sleep = 0.05
@@ -1057,13 +1043,13 @@ def compare_gesture_live(threshold=0.06, hold_time=1.0, history_frames=5):
                                          print('Entering Trajectory Mode: Select Saved Files')
                                          
 
-                                    #If 'H' is signed and Trajectory Mode is on saved files will be executed in succession
+                                    #If 'M' is signed and Trajectory Mode is on saved files will be executed in succession
                                     elif charac == 'M' and traj_mode == True:
                                          #Defines the string of combined letters
                                          sword = ''.join(word_spelled)
                                          print('Moving to selected saved files')
                                          
-                                         #For every letter in the string the arm will move to those points
+                                         #For every character in the string the arm will move to the saved angles of that file character
                                          for letter in sword:
                                              try:
                                                  if letter == 'G':
